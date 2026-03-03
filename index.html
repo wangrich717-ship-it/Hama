@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蛤蟆先生的心灵之旅</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=ZCOOL+XiaoWei&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-dark:#1a1a2e;--bg-warm:#f5e6d3;--text-main:#2c2c2c;--text-light:#f0e6d6;
+  --accent:#c9a96e;--accent-dark:#8b6914;--therapy-blue:#4a6fa5;--hope-gold:#d4a017;
+  --danger:#a04040;--ok-green:#4a8c5c;--not-ok-red:#8c4a4a;
+  --shadow:0 4px 20px rgba(0,0,0,0.3);--radius:12px;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',serif;background:#0d0d1a}
+#game-root{width:100%;height:100%;position:relative;overflow:hidden}
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;opacity:0;transition:opacity 0.8s ease}
+.screen.active{display:flex;opacity:1}
+
+/* LOADING */
+#loading-screen{background:var(--bg-dark);justify-content:center;align-items:center;flex-direction:column}
+.loading-content{text-align:center}
+.loading-spinner{width:60px;height:60px;border:3px solid rgba(201,169,110,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--accent);font-size:18px;letter-spacing:4px}
+
+/* TITLE SCREEN */
+#title-screen{flex-direction:column;justify-content:center;align-items:center;background-size:cover;background-position:center center;position:relative;background-repeat:no-repeat;background-color:#2a2018}
+#title-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center 45%,rgba(13,13,26,0.15) 0%,rgba(13,13,26,0.4) 50%,rgba(13,13,26,0.7) 100%)}
+.title-content{position:relative;z-index:2;text-align:center;padding:40px}
+.title-content h1{font-family:'ZCOOL XiaoWei',serif;font-size:clamp(36px,6vw,64px);color:var(--text-light);text-shadow:0 2px 20px rgba(0,0,0,0.6),0 0 40px rgba(0,0,0,0.4);margin-bottom:16px;letter-spacing:6px;animation:titleFadeIn 1.5s ease}
+.title-content .subtitle{font-size:clamp(14px,2.5vw,20px);color:#fff;letter-spacing:4px;margin-bottom:50px;animation:titleFadeIn 2s ease;text-shadow:0 1px 8px rgba(0,0,0,0.8),0 0 20px rgba(0,0,0,0.6);background:rgba(13,13,26,0.45);padding:10px 24px;border-radius:999px;backdrop-filter:blur(4px);display:block;width:fit-content;margin-left:auto;margin-right:auto}
+@keyframes titleFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.title-btn{background:rgba(13,13,26,0.5);border:1px solid var(--accent);color:var(--accent);padding:14px 50px;font-size:18px;font-family:'Noto Serif SC',serif;cursor:pointer;letter-spacing:6px;transition:all 0.4s;border-radius:4px;backdrop-filter:blur(8px)}
+.title-btn:hover{background:var(--accent);color:var(--bg-dark);transform:translateY(-2px);box-shadow:0 4px 20px rgba(201,169,110,0.3)}
+
+/* GAME SCREEN LAYOUT */
+#game-screen{flex-direction:column;background:var(--bg-dark)}
+.game-header{height:auto;min-height:56px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:space-between;padding:8px 20px;border-bottom:1px solid rgba(201,169,110,0.15);flex-shrink:0;flex-wrap:wrap;gap:4px 12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.chapter-label{color:var(--accent);font-size:13px;letter-spacing:2px}
+.thermometer-bar{display:flex;align-items:center;gap:8px}
+.thermo-label{color:rgba(240,230,216,0.6);font-size:12px}
+.thermo-track{width:120px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.thermo-fill{height:100%;border-radius:4px;transition:width 1s ease,background 1s ease;width:15%}
+.thermo-val{color:var(--accent);font-size:13px;font-weight:600;min-width:32px}
+.header-right{display:flex;align-items:center;gap:12px}
+.ego-badges{display:flex;gap:6px}
+.ego-badge{padding:3px 10px;border-radius:12px;font-size:11px;letter-spacing:1px;opacity:0.4;transition:all 0.4s;border:1px solid transparent}
+.ego-badge.active{opacity:1}
+.ego-badge.child{color:#e8a87c;border-color:#e8a87c}
+.ego-badge.parent{color:#85c1e9;border-color:#85c1e9}
+.ego-badge.adult{color:#82e0aa;border-color:#82e0aa}
+.ego-badge.locked{opacity:0.2;color:#666}
+
+.game-body{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* SCENE BG */
+.scene-bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 1.2s ease;z-index:0}
+.scene-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(13,13,26,0.95) 0%,rgba(13,13,26,0.88) 30%,rgba(13,13,26,0.6) 55%,rgba(13,13,26,0.3) 100%)}
+
+/* DIALOGUE AREA */
+.dialogue-area{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0;overflow:hidden}
+.dialogue-history{flex:1;overflow-y:auto;padding:20px 16px 10px;display:flex;flex-direction:column;gap:12px;justify-content:flex-end;min-height:0;align-items:center}
+.dialogue-history::-webkit-scrollbar{width:4px}
+.dialogue-history::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.3);border-radius:2px}
+.msg{display:flex;gap:12px;animation:msgIn 0.4s ease;max-width:680px;width:100%;box-sizing:border-box;padding:0 4px}
+.msg.narrator{max-width:680px;justify-content:center;padding:0 4px}
+@keyframes msgIn{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;background-size:cover;background-position:center top;border:2px solid rgba(201,169,110,0.3)}
+.msg > div:not(.msg-avatar){min-width:0;flex:1}
+.msg-bubble{background:rgba(10,10,30,0.65);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 16px;color:var(--text-light);font-size:15px;line-height:1.8;backdrop-filter:blur(12px);overflow-wrap:break-word}
+.msg.narrator .msg-bubble{background:rgba(10,10,30,0.5);border:1px solid rgba(201,169,110,0.1);color:rgba(201,169,110,0.9);font-style:italic;font-size:14px;text-align:center;padding:10px 24px;letter-spacing:1px;border-radius:8px;backdrop-filter:blur(12px);max-width:100%;width:100%}
+.msg.self{flex-direction:row-reverse}
+.msg.self .msg-bubble{background:rgba(201,169,110,0.12);border-color:rgba(201,169,110,0.2)}
+.msg .speaker-name{font-size:11px;color:var(--accent);margin-bottom:4px;letter-spacing:1px}
+
+/* INPUT / CHOICE AREA */
+.input-area{position:relative;z-index:3;padding:12px 20px 18px;background:linear-gradient(0deg,rgba(13,13,26,0.98) 0%,rgba(13,13,26,0.85) 80%,transparent 100%);max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center}
+.input-area::-webkit-scrollbar{width:4px}
+.input-area::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.3);border-radius:2px}
+.choices-container{display:flex;flex-direction:column;gap:8px;max-width:680px;width:100%}
+.choice-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(201,169,110,0.25);border-radius:10px;padding:14px 20px;color:var(--text-light);font-size:14px;font-family:'Noto Serif SC',serif;cursor:pointer;text-align:left;transition:all 0.3s;line-height:1.6;display:flex;align-items:center;gap:12px}
+.choice-btn:hover{background:rgba(201,169,110,0.12);border-color:var(--accent);transform:translateX(4px)}
+.choice-btn .choice-key{width:28px;height:28px;border-radius:50%;border:1px solid rgba(201,169,110,0.4);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent);flex-shrink:0}
+.continue-btn{background:transparent;border:1px solid rgba(201,169,110,0.3);color:var(--accent);padding:12px 40px;font-size:14px;font-family:'Noto Serif SC',serif;cursor:pointer;letter-spacing:4px;transition:all 0.3s;border-radius:8px;margin:0 auto;display:block}
+.continue-btn:hover{background:rgba(201,169,110,0.15);border-color:var(--accent)}
+
+/* INTERACTIVE WIDGETS */
+.widget-container{background:rgba(0,0,0,0.3);border:1px solid rgba(201,169,110,0.15);border-radius:var(--radius);padding:18px 20px;margin:6px 0;backdrop-filter:blur(8px);max-width:680px;width:100%}
+.widget-title{color:var(--accent);font-size:15px;text-align:center;margin-bottom:12px;letter-spacing:2px}
+
+/* Thermometer Widget */
+.thermo-widget{text-align:center}
+.thermo-visual{display:flex;justify-content:center;gap:5px;margin:12px 0}
+.thermo-dot{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,0.3)}
+.thermo-dot:hover{transform:scale(1.2);border-color:var(--accent)}
+.thermo-dot.selected{border-color:var(--accent);background:rgba(201,169,110,0.3);color:var(--accent);font-weight:600}
+.thermo-result{color:var(--text-light);font-size:14px;margin-top:10px;opacity:0;transition:opacity 0.4s}
+
+/* Emotion Cards */
+.emotion-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin:10px 0}
+.emotion-card{padding:14px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);text-align:center;cursor:pointer;transition:all 0.3s;color:var(--text-light);font-size:13px}
+.emotion-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.emotion-card.selected{border-color:var(--accent);background:rgba(201,169,110,0.15)}
+.emotion-card .emotion-icon{font-size:24px;margin-bottom:6px;display:block}
+
+/* Life Position Quadrant */
+.quadrant-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+.quadrant-cell{padding:18px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);text-align:center;cursor:pointer;transition:all 0.4s;font-size:13px;line-height:1.5}
+.quadrant-cell:hover{transform:scale(1.03)}
+.quadrant-cell.q1{color:#e8a87c;border-color:rgba(232,168,124,0.3)}
+.quadrant-cell.q2{color:#e07070;border-color:rgba(224,112,112,0.3)}
+.quadrant-cell.q3{color:#85c1e9;border-color:rgba(133,193,233,0.3)}
+.quadrant-cell.q4{color:#82e0aa;border-color:rgba(130,224,170,0.3)}
+.quadrant-cell.selected{background:rgba(255,255,255,0.1);transform:scale(1.05);box-shadow:0 0 20px rgba(201,169,110,0.2)}
+
+/* Stamp Collection */
+.stamps-container{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.stamp{width:48px;height:48px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all 0.3s;position:relative}
+.stamp.negative{background:rgba(160,64,64,0.2);border:1px solid rgba(160,64,64,0.4);color:#e07070}
+.stamp.released{opacity:0.3;transform:scale(0.8);text-decoration:line-through}
+.stamp-count{color:var(--accent);font-size:14px;text-align:center;margin-top:8px}
+
+/* Memory Puzzle */
+.memory-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.memory-tile{min-height:60px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.4s;font-size:12px;color:var(--text-light);text-align:center;padding:8px;line-height:1.4;background:rgba(0,0,0,0.3)}
+.memory-tile:hover{border-color:var(--accent)}
+.memory-tile.revealed{background:rgba(201,169,110,0.1);border-color:var(--accent)}
+.memory-tile.matched{background:rgba(130,224,170,0.1);border-color:var(--ok-green)}
+
+/* Anger Spectrum Slider */
+.anger-slider-container{margin:16px 0;text-align:center}
+.anger-spectrum{display:flex;justify-content:space-between;margin:10px 0;position:relative}
+.anger-spectrum::before{content:'';position:absolute;top:50%;left:0;right:0;height:3px;background:linear-gradient(90deg,#e07070,#e8a87c,#f0e68c,#82e0aa);transform:translateY(-50%);border-radius:2px}
+.anger-point{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:rgba(13,13,26,0.9);cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-light)}
+.anger-point:hover{transform:scale(1.15);border-color:var(--accent)}
+.anger-point.selected{border-color:var(--accent);background:rgba(201,169,110,0.2);box-shadow:0 0 12px rgba(201,169,110,0.3)}
+.anger-label{color:rgba(240,230,216,0.6);font-size:12px;margin-top:8px}
+
+/* Reflection Input */
+.reflection-box{width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(201,169,110,0.2);border-radius:10px;padding:14px;color:var(--text-light);font-family:'Noto Serif SC',serif;font-size:14px;resize:none;outline:none;line-height:1.8;min-height:80px;transition:border-color 0.3s}
+.reflection-box:focus{border-color:var(--accent)}
+.reflection-submit{margin-top:10px}
+
+/* Sorting / Drag */
+.sort-list{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.sort-item{padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);color:var(--text-light);font-size:13px;cursor:grab;transition:all 0.2s;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.2)}
+.sort-item:hover{border-color:var(--accent)}
+.sort-item .sort-handle{color:rgba(201,169,110,0.4);font-size:16px}
+.sort-item.dragging{opacity:0.5;border-color:var(--accent)}
+.sort-item.correct{border-color:var(--ok-green);background:rgba(130,224,170,0.08)}
+.sort-item.wrong{border-color:var(--danger);background:rgba(160,64,64,0.08)}
+
+/* INSIGHT POPUP */
+.insight-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:all 0.5s}
+.insight-overlay.show{opacity:1;pointer-events:all}
+.insight-card{background:linear-gradient(135deg,#1a1a2e 0%,#2a2a4e 100%);border:1px solid rgba(201,169,110,0.3);border-radius:16px;padding:36px;max-width:460px;width:90%;text-align:center;transform:scale(0.9);transition:transform 0.5s;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.insight-overlay.show .insight-card{transform:scale(1)}
+.insight-card .insight-icon{width:56px;height:56px;border-radius:50%;background:rgba(201,169,110,0.1);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--accent);font-size:22px}
+.insight-card h3{color:var(--accent);font-size:18px;margin-bottom:12px;letter-spacing:2px}
+.insight-card p{color:var(--text-light);font-size:14px;line-height:2;margin-bottom:20px;opacity:0.9}
+.insight-card .insight-quote{font-style:italic;color:rgba(201,169,110,0.8);font-size:13px;border-left:2px solid var(--accent);padding-left:14px;text-align:left;margin:16px 0;line-height:1.8}
+.insight-close{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:10px 30px;border-radius:6px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;transition:all 0.3s}
+.insight-close:hover{background:var(--accent);color:var(--bg-dark)}
+
+/* ENDING SCREEN */
+#ending-screen{flex-direction:column;justify-content:flex-start;align-items:center;background-size:cover;background-position:center;position:relative;overflow-y:auto}
+#ending-screen::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,rgba(13,13,26,0.4) 0%,rgba(13,13,26,0.75) 100%);pointer-events:none}
+.ending-content{position:relative;z-index:2;text-align:center;padding:30px 20px;max-width:560px;width:100%}
+.ending-content h1{font-family:'ZCOOL XiaoWei',serif;font-size:clamp(24px,4vw,40px);color:var(--text-light);margin-bottom:10px;letter-spacing:4px}
+.ending-content .ending-score{font-size:40px;color:var(--accent);margin:12px 0}
+.ending-content p{color:var(--text-light);font-size:14px;line-height:1.8;margin-bottom:10px;opacity:0.85}
+.ending-fates{text-align:left;margin:16px 0;padding:16px;background:rgba(0,0,0,0.3);border-radius:12px;border:1px solid rgba(201,169,110,0.15)}
+.ending-fates h3{color:var(--accent);margin-bottom:10px;font-size:14px;letter-spacing:2px}
+.fate-item{color:var(--text-light);font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.6;display:flex;gap:8px}
+.fate-item:last-child{border-bottom:none}
+.fate-icon{color:var(--accent);flex-shrink:0}
+
+/* CHAPTER TRANSITION */
+.chapter-transition{position:fixed;inset:0;z-index:50;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity 0.8s}
+.chapter-transition.show{opacity:1;pointer-events:all}
+.chapter-transition h2{font-family:'ZCOOL XiaoWei',serif;font-size:28px;color:var(--accent);letter-spacing:6px;margin-bottom:8px}
+.chapter-transition p{color:var(--text-light);font-size:15px;opacity:0.7;letter-spacing:2px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .game-header{padding:6px 12px;gap:4px 8px}
+  .header-left{gap:8px;flex-wrap:wrap}
+  .chapter-label{font-size:12px;letter-spacing:1px}
+  .thermo-label{font-size:11px}
+  .thermo-track{width:60px}
+  .thermo-val{font-size:12px;min-width:28px}
+  .ego-badge{padding:2px 7px;font-size:10px}
+  .ego-badges{gap:4px}
+  .title-content h1{letter-spacing:3px}
+  .title-content .subtitle{letter-spacing:2px;padding:8px 18px;font-size:clamp(12px,2.2vw,16px)}
+  .dialogue-history{padding:12px}
+  .input-area{padding:10px 12px 14px}
+  .msg-bubble{font-size:13px;padding:10px 12px}
+  .widget-container{padding:14px}
+  .quadrant-grid{gap:6px}
+  .quadrant-cell{padding:10px 8px;font-size:11px}
+  .anger-point{width:30px;height:30px;font-size:9px}
+  .msg{max-width:100%;padding:0 2px}
+}
+
+/* INSIGHT REVIEW ON ENDING */
+.insights-review{margin:16px 0;text-align:left}
+.insights-review h3{color:var(--accent);font-size:14px;text-align:center;margin-bottom:12px;letter-spacing:2px}
+.insight-review-card{background:rgba(0,0,0,0.3);border:1px solid rgba(201,169,110,0.2);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.insight-review-card h4{color:var(--accent);font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.insight-review-card h4::before{content:'\\2605';font-size:12px}
+.insight-review-card p{color:var(--text-light);font-size:12px;line-height:1.7;opacity:0.85;white-space:pre-line}
+.insight-review-card .review-quote{font-style:italic;color:rgba(201,169,110,0.75);font-size:11px;border-left:2px solid rgba(201,169,110,0.4);padding-left:10px;margin-top:8px;line-height:1.6}
+.download-insights-btn{background:rgba(201,169,110,0.12);border:1px solid var(--accent);color:var(--accent);padding:10px 28px;border-radius:6px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;transition:all 0.3s;display:block;margin:12px auto 0}
+.download-insights-btn:hover{background:var(--accent);color:var(--bg-dark)}
+</style>
+</head>
+<body>
+<div id="game-root">
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen" class="screen active">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在准备旅程...</p>
+    </div>
+  </div>
+  <!-- TITLE SCREEN -->
+  <div id="title-screen" class="screen"></div>
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen"></div>
+  <!-- ENDING SCREEN -->
+  <div id="ending-screen" class="screen"></div>
+</div>
+<script>
+// ========== AUDIO ENGINE ==========
+const AudioEngine = {
+  ctx: null,
+  masterGain: null,
+  bgmGain: null,
+  sfxGain: null,
+  bgmNode: null,
+  init() {
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0.6;
+    this.masterGain.connect(this.ctx.destination);
+    this.bgmGain = this.ctx.createGain();
+    this.bgmGain.gain.value = 0.25;
+    this.bgmGain.connect(this.masterGain);
+    this.sfxGain = this.ctx.createGain();
+    this.sfxGain.gain.value = 0.5;
+    this.sfxGain.connect(this.masterGain);
+  },
+  resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); },
+  // Generate a soft ambient BGM loop
+  playBGM(mood) {
+    this.resume();
+    if (this.bgmNode) { try { this.bgmNode.stop(); } catch(e){} }
+    const moods = {
+      sad: { notes: [174.6,220,261.6,220], tempo: 1.2, type: 'sine', detune: -5 },
+      calm: { notes: [261.6,329.6,392,329.6], tempo: 1.0, type: 'sine', detune: 0 },
+      tense: { notes: [196,233.1,261.6,233.1], tempo: 0.9, type: 'sine', detune: -3 },
+      hopeful: { notes: [329.6,392,440,523.3], tempo: 0.9, type: 'sine', detune: 2 },
+      warm: { notes: [293.7,349.2,392,349.2], tempo: 1.0, type: 'sine', detune: 0 },
+      triumph: { notes: [392,440,523.3,440], tempo: 0.85, type: 'sine', detune: 3 }
+    };
+    const m = moods[mood] || moods.calm;
+    const dur = m.tempo;
+    const totalDur = m.notes.length * dur;
+    const buf = this.ctx.createBuffer(2, this.ctx.sampleRate * totalDur, this.ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < m.notes.length; i++) {
+        const freq = m.notes[i] + (ch * 0.5);
+        const startSample = Math.floor(i * dur * this.ctx.sampleRate);
+        const endSample = Math.floor((i + 1) * dur * this.ctx.sampleRate);
+        for (let s = startSample; s < endSample && s < data.length; s++) {
+          const t = (s - startSample) / this.ctx.sampleRate;
+          // Smooth sine envelope - very gentle attack/release
+          const env = Math.pow(Math.sin(Math.PI * t / dur), 2) * 0.12;
+          // Main tone (pure sine, very soft)
+          data[s] = Math.sin(2 * Math.PI * freq * t) * env;
+          // Sub-octave pad for warmth
+          data[s] += Math.sin(2 * Math.PI * freq * 0.5 * t) * env * 0.4;
+          // Fifth harmony for richness
+          data[s] += Math.sin(2 * Math.PI * freq * 1.498 * t) * env * 0.08;
+          // Very subtle detuned layer for dreaminess
+          data[s] += Math.sin(2 * Math.PI * (freq + m.detune) * t) * env * 0.06;
+        }
+      }
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    // Add a low-pass filter for softness
+    const lpf = this.ctx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.frequency.value = 800;
+    lpf.Q.value = 0.5;
+    src.connect(lpf);
+    lpf.connect(this.bgmGain);
+    src.start();
+    this.bgmNode = src;
+  },
+  // SFX methods
+  playClick() {
+    this.resume();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 800;
+    g.gain.setValueAtTime(0.15, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+    o.connect(g); g.connect(this.sfxGain);
+    o.start(); o.stop(this.ctx.currentTime + 0.08);
+  },
+  playReveal() {
+    this.resume();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(400, this.ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.25);
+    g.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+    o.connect(g); g.connect(this.sfxGain);
+    o.start(); o.stop(this.ctx.currentTime + 0.3);
+  },
+  playInsight() {
+    this.resume();
+    const notes = [523.3, 659.3, 784, 1047];
+    notes.forEach((f, i) => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = this.ctx.currentTime + i * 0.12;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(g); g.connect(this.sfxGain);
+      o.start(t); o.stop(t + 0.4);
+    });
+  },
+  playCorrect() {
+    this.resume();
+    [523.3, 659.3].forEach((f, i) => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = this.ctx.currentTime + i * 0.1;
+      g.gain.setValueAtTime(0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      o.connect(g); g.connect(this.sfxGain);
+      o.start(t); o.stop(t + 0.2);
+    });
+  },
+  playWrong() {
+    this.resume();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'square'; o.frequency.value = 200;
+    g.gain.setValueAtTime(0.1, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+    o.connect(g); g.connect(this.sfxGain);
+    o.start(); o.stop(this.ctx.currentTime + 0.2);
+  },
+  playTransition() {
+    this.resume();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(300, this.ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.6);
+    g.gain.setValueAtTime(0.15, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.7);
+    o.connect(g); g.connect(this.sfxGain);
+    o.start(); o.stop(this.ctx.currentTime + 0.7);
+  },
+  playHeartbeat() {
+    this.resume();
+    [0, 0.15].forEach(delay => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 60;
+      const t = this.ctx.currentTime + delay;
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      o.connect(g); g.connect(this.sfxGain);
+      o.start(t); o.stop(t + 0.15);
+    });
+  },
+  playStampRelease() {
+    this.resume();
+    const notes = [784, 880, 1047, 1319];
+    notes.forEach((f, i) => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = this.ctx.currentTime + i * 0.08;
+      g.gain.setValueAtTime(0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.connect(g); g.connect(this.sfxGain);
+      o.start(t); o.stop(t + 0.3);
+    });
+  },
+  playTyping() {
+    this.resume();
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    const f = this.ctx.createBiquadFilter();
+    o.type = 'sine';
+    o.frequency.value = 1200 + Math.random() * 400;
+    f.type = 'highpass';
+    f.frequency.value = 800;
+    g.gain.setValueAtTime(0.03, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+    o.connect(f); f.connect(g); g.connect(this.sfxGain);
+    o.start(); o.stop(this.ctx.currentTime + 0.04);
+  }
+};
+
+// ========== GAME STATE ==========
+const GameState = {
+  temperature: 1.5,
+  chapter: 0,
+  stepIndex: 0,
+  egoStates: { child: true, parent: false, adult: false },
+  stamps: 0,
+  insightsGained: [],
+  choicesMade: {},
+  currentBg: '',
+  currentMood: 'sad'
+};
+
+const AVATARS = {
+  toad: 'assets/toad_portrait.png',
+  heron: 'assets/heron_portrait.png'
+};
+
+const SCENES = {
+  toad_hall: 'assets/toad_hall.png',
+  therapy: 'assets/therapy_office.png',
+  childhood: 'assets/childhood_memory.png',
+  friends: 'assets/friends_gathering.png',
+  sunrise: 'assets/sunrise_transformation.png',
+  title: 'assets/title_background.png'
+};
+
+// ========== PLACEHOLDER FOR CHAPTERS DATA ==========
+// CHAPTERS_DATA will be defined next
+
+// ========== DOM HELPERS ==========
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function switchScreen(id) {
+  $$('.screen').forEach(s => { s.classList.remove('active'); });
+  setTimeout(() => { document.getElementById(id).classList.add('active'); }, 50);
+}
+
+function setBackground(scene) {
+  if (GameState.currentBg === scene) return;
+  GameState.currentBg = scene;
+  const bg = $('.scene-bg');
+  if (bg) {
+    bg.style.opacity = 0;
+    setTimeout(() => {
+      bg.style.backgroundImage = `url(${SCENES[scene]})`;
+      bg.style.opacity = 1;
+    }, 400);
+  }
+}
+
+function updateThermometer() {
+  const pct = Math.max(0, Math.min(100, (GameState.temperature / 10) * 100));
+  const fill = $('.thermo-fill');
+  if (fill) {
+    fill.style.width = pct + '%';
+    const hue = (pct / 100) * 120;
+    fill.style.background = `hsl(${hue}, 60%, 50%)`;
+  }
+  const val = $('.thermo-val');
+  if (val) val.textContent = GameState.temperature.toFixed(1);
+}
+
+function updateEgoBadges() {
+  $$('.ego-badge').forEach(b => {
+    const type = b.dataset.type;
+    b.classList.toggle('active', GameState.egoStates[type]);
+    b.classList.toggle('locked', !GameState.egoStates[type]);
+  });
+}
+
+function scrollToBottom() {
+  const hist = $('.dialogue-history');
+  if (hist) setTimeout(() => hist.scrollTop = hist.scrollHeight, 50);
+}
+
+// ========== DIALOGUE ENGINE ==========
+const DialogueEngine = {
+  addMessage(speaker, text, type = 'npc') {
+    const hist = $('.dialogue-history');
+    if (!hist) return;
+    const msg = document.createElement('div');
+    msg.className = `msg ${type}`;
+    if (type === 'narrator') {
+      msg.innerHTML = `<div class="msg-bubble">${text}</div>`;
+    } else {
+      const avatarUrl = AVATARS[speaker] || '';
+      const names = { toad: '蛤蟆先生', heron: '苍鹭咨询师', badger: '老獾', rat: '河鼠', mole: '鼹鼠' };
+      msg.innerHTML = `
+        <div class="msg-avatar" style="background-image:url(${avatarUrl})"></div>
+        <div>
+          <div class="speaker-name">${names[speaker] || speaker}</div>
+          <div class="msg-bubble">${text}</div>
+        </div>`;
+    }
+    hist.appendChild(msg);
+    scrollToBottom();
+    AudioEngine.playTyping();
+  },
+
+  async typeMessage(speaker, text, type = 'npc') {
+    const hist = $('.dialogue-history');
+    if (!hist) return;
+    const msg = document.createElement('div');
+    msg.className = `msg ${type}`;
+    const bubble = document.createElement('div');
+    if (type === 'narrator') {
+      bubble.className = 'msg-bubble';
+      msg.appendChild(bubble);
+    } else {
+      const avatarUrl = AVATARS[speaker] || '';
+      const names = { toad: '蛤蟆先生', heron: '苍鹭咨询师', badger: '老獾', rat: '河鼠', mole: '鼹鼠' };
+      const wrapper = document.createElement('div');
+      const nameEl = document.createElement('div');
+      nameEl.className = 'speaker-name';
+      nameEl.textContent = names[speaker] || speaker;
+      bubble.className = 'msg-bubble';
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.style.backgroundImage = `url(${avatarUrl})`;
+      msg.appendChild(avatar);
+      wrapper.appendChild(nameEl);
+      wrapper.appendChild(bubble);
+      msg.appendChild(wrapper);
+    }
+    hist.appendChild(msg);
+    scrollToBottom();
+    // Typewriter effect - character by character
+    for (let i = 0; i < text.length; i++) {
+      bubble.textContent += text[i];
+      // Play typing sound for each character (except spaces)
+      if (text[i] !== ' ' && text[i] !== '\n') AudioEngine.playTyping();
+      scrollToBottom();
+      // Slower pace: 45ms per char, slight pause on punctuation
+      const ch = text[i];
+      const isPunct = '，。！？；：、......'.includes(ch);
+      await new Promise(r => setTimeout(r, isPunct ? 240 : 90));
+    }
+  },
+
+  showChoices(choices, callback) {
+    const area = $('.input-area');
+    if (!area) return;
+    const container = document.createElement('div');
+    container.className = 'choices-container';
+    const keys = ['A', 'B', 'C', 'D'];
+    choices.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.innerHTML = `<span class="choice-key">${keys[i]}</span><span>${c.text}</span>`;
+      btn.onclick = () => {
+        AudioEngine.playClick();
+        container.remove();
+        if (c.selfText) {
+          DialogueEngine.addMessage('toad', c.selfText, 'self');
+        }
+        callback(c, i);
+      };
+      container.appendChild(btn);
+    });
+    area.innerHTML = '';
+    area.appendChild(container);
+  },
+
+  showContinue(callback) {
+    const area = $('.input-area');
+    if (!area) return;
+    area.innerHTML = `<button class="continue-btn" id="cont-btn">继 续</button>`;
+    $('#cont-btn').onclick = () => { AudioEngine.playClick(); callback(); };
+  },
+
+  showWidget(html, onReady) {
+    const area = $('.input-area');
+    if (!area) return;
+    area.innerHTML = html;
+    if (onReady) onReady();
+  },
+
+  clearInput() {
+    const area = $('.input-area');
+    if (area) area.innerHTML = '';
+  },
+
+  clearHistory() {
+    const hist = $('.dialogue-history');
+    if (hist) hist.innerHTML = '';
+  }
+};
+
+// ========== INSIGHT SYSTEM ==========
+const InsightStore = [];
+
+function showInsight(title, text, quote) {
+  AudioEngine.playInsight();
+  // Store for later review
+  InsightStore.push({ title, text, quote });
+  const overlay = document.createElement('div');
+  overlay.className = 'insight-overlay';
+  overlay.innerHTML = `
+    <div class="insight-card">
+      <div class="insight-icon">&#9733;</div>
+      <h3>${title}</h3>
+      <p>${text}</p>
+      ${quote ? `<div class="insight-quote">"${quote}"</div>` : ''}
+      <button class="insight-close">领 悟</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('show'));
+  return new Promise(resolve => {
+    overlay.querySelector('.insight-close').onclick = () => {
+      overlay.classList.remove('show');
+      setTimeout(() => { overlay.remove(); resolve(); }, 500);
+    };
+  });
+}
+
+// ========== CHAPTER TRANSITION ==========
+function showChapterTransition(num, title) {
+  AudioEngine.playTransition();
+  const el = document.createElement('div');
+  el.className = 'chapter-transition';
+  // Handle '终章' specially - no '第X章' prefix
+  if (num === '终章') {
+    el.innerHTML = `<h2>${num}</h2><p>${title}</p>`;
+  } else {
+    el.innerHTML = `<h2>第${num}章</h2><p>${title}</p>`;
+  }
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  return new Promise(resolve => {
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => { el.remove(); resolve(); }, 800);
+    }, 2200);
+  });
+}
+
+// ========== CHAPTERS DATA PLACEHOLDER ==========
+let CHAPTERS = [];
+
+// ========== GAME RUNNER (step-based) ==========
+async function runStep() {
+  const ch = CHAPTERS[GameState.chapter];
+  if (!ch) { showEnding(); return; }
+  const step = ch.steps[GameState.stepIndex];
+  if (!step) {
+    GameState.chapter++;
+    GameState.stepIndex = 0;
+    runStep();
+    return;
+  }
+  await step();
+  // stepIndex is advanced inside each step via nextStep()
+}
+
+function nextStep() {
+  GameState.stepIndex++;
+  runStep();
+}
+
+// Utility: wait for continue click
+function waitContinue() {
+  return new Promise(resolve => { DialogueEngine.showContinue(resolve); });
+}
+
+// Utility: wait for choice
+function waitChoice(choices) {
+  return new Promise(resolve => { DialogueEngine.showChoices(choices, resolve); });
+}
+
+// ========== ENDING ==========
+function showEnding() {
+  switchScreen('ending-screen');
+  const es = $('#ending-screen');
+  es.style.backgroundImage = `url(${SCENES.sunrise})`;
+  AudioEngine.playBGM('triumph');
+  const tempDisplay = GameState.temperature.toFixed(1);
+  // Build insight review cards
+  const insightCards = InsightStore.map(ins => `
+    <div class="insight-review-card">
+      <h4>${ins.title}</h4>
+      <p>${ins.text}</p>
+      ${ins.quote ? `<div class="review-quote">"${ins.quote}"</div>` : ''}
+    </div>`).join('');
+
+  es.querySelector('.ending-content').innerHTML = `
+    <h1>新 生</h1>
+    <div class="ending-score">${tempDisplay} / 10</div>
+    <p>蛤蟆先生完成了他的心灵之旅。<br>从最初的 1.5 分，到现在的 ${tempDisplay} 分。</p>
+    <p>他选择了「我好，你也好」的人生坐标，<br>不再是别人期望中的那个蛤蟆，<br>而是真正的、自由的自己。</p>
+    <div class="ending-fates">
+      <h3>每个人都找到了新的方向</h3>
+      <div class="fate-item"><span class="fate-icon">&#9679;</span> 蛤蟆先生 -- 重获自信，选择了全新的人生道路</div>
+      <div class="fate-item"><span class="fate-icon">&#9679;</span> 苍鹭 -- 在这段咨询关系中，他也收获了成长</div>
+      <div class="fate-item"><span class="fate-icon">&#9679;</span> 河鼠 -- 去南方经营书店，开始写作生涯</div>
+      <div class="fate-item"><span class="fate-icon">&#9679;</span> 鼹鼠 -- 开了一家温馨的餐馆</div>
+      <div class="fate-item"><span class="fate-icon">&#9679;</span> 老獾 -- 成为地方议会主席</div>
+    </div>
+    <div class="insights-review" id="insights-review">
+      <h3>旅程中的领悟 (${InsightStore.length})</h3>
+      ${insightCards}
+      <button class="download-insights-btn" id="download-insights-btn">保存为长图</button>
+    </div>
+    <p style="margin-top:16px;font-size:12px;opacity:0.6">「没有一种批判比自我批判更强烈，<br>也没有一个法官比我们自己更严苛。」</p>
+    <button class="title-btn" style="margin-top:16px;margin-bottom:30px" onclick="location.reload()">重新开始</button>
+  `;
+
+  // Download insights as long image
+  document.getElementById('download-insights-btn').onclick = () => {
+    generateInsightsImage();
+  };
+}
+
+// ========== GENERATE INSIGHTS LONG IMAGE ==========
+function generateInsightsImage() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 750;
+  const padding = 40;
+  const cardPadding = 20;
+  const lineHeight = 28;
+  const titleFont = 'bold 20px "Noto Serif SC", serif';
+  const bodyFont = '15px "Noto Serif SC", serif';
+  const quoteFont = 'italic 13px "Noto Serif SC", serif';
+  const headerFont = 'bold 28px "Noto Serif SC", serif';
+
+  // Pre-calculate height
+  ctx.font = bodyFont;
+  let totalH = 160; // header area
+  InsightStore.forEach(ins => {
+    totalH += 50; // title + gap
+    const lines = wrapText(ctx, ins.text, W - padding * 2 - cardPadding * 2);
+    totalH += lines.length * lineHeight + 20;
+    if (ins.quote) {
+      ctx.font = quoteFont;
+      const qlines = wrapText(ctx, '"' + ins.quote + '"', W - padding * 2 - cardPadding * 2 - 16);
+      totalH += qlines.length * 22 + 20;
+      ctx.font = bodyFont;
+    }
+    totalH += 30; // card bottom margin
+  });
+  totalH += 80; // footer
+
+  canvas.width = W;
+  canvas.height = totalH;
+
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, totalH);
+
+  // Header
+  let y = 50;
+  ctx.fillStyle = '#c9a96e';
+  ctx.font = headerFont;
+  ctx.textAlign = 'center';
+  ctx.fillText('蛤蟆先生的心灵之旅', W / 2, y);
+  y += 36;
+  ctx.fillStyle = 'rgba(240,230,216,0.7)';
+  ctx.font = '14px "Noto Serif SC", serif';
+  ctx.fillText('旅程中的 ' + InsightStore.length + ' 个领悟', W / 2, y);
+  y += 16;
+  // Divider
+  ctx.strokeStyle = 'rgba(201,169,110,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, y + 10);
+  ctx.lineTo(W - padding, y + 10);
+  ctx.stroke();
+  y += 30;
+
+  ctx.textAlign = 'left';
+
+  InsightStore.forEach((ins, idx) => {
+    // Card background
+    const cardX = padding;
+    const cardW = W - padding * 2;
+    // Calc card height
+    ctx.font = bodyFont;
+    const bodyLines = wrapText(ctx, ins.text, cardW - cardPadding * 2);
+    let cardH = 44 + bodyLines.length * lineHeight + 16;
+    if (ins.quote) {
+      ctx.font = quoteFont;
+      const qlines = wrapText(ctx, '"' + ins.quote + '"', cardW - cardPadding * 2 - 16);
+      cardH += qlines.length * 22 + 16;
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(ctx, cardX, y, cardW, cardH, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(201,169,110,0.2)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, cardX, y, cardW, cardH, 10);
+    ctx.stroke();
+
+    let cy = y + cardPadding;
+    // Title
+    ctx.fillStyle = '#c9a96e';
+    ctx.font = titleFont;
+    ctx.fillText('\u2605 ' + ins.title, cardX + cardPadding, cy + 16);
+    cy += 36;
+
+    // Body
+    ctx.fillStyle = 'rgba(240,230,216,0.85)';
+    ctx.font = bodyFont;
+    const blines = wrapText(ctx, ins.text, cardW - cardPadding * 2);
+    blines.forEach(line => {
+      ctx.fillText(line, cardX + cardPadding, cy);
+      cy += lineHeight;
+    });
+
+    // Quote
+    if (ins.quote) {
+      cy += 8;
+      ctx.strokeStyle = 'rgba(201,169,110,0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cardX + cardPadding, cy - 4);
+      ctx.lineTo(cardX + cardPadding, cy + 40);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(201,169,110,0.7)';
+      ctx.font = quoteFont;
+      const qlines = wrapText(ctx, '"' + ins.quote + '"', cardW - cardPadding * 2 - 16);
+      qlines.forEach(line => {
+        ctx.fillText(line, cardX + cardPadding + 14, cy);
+        cy += 22;
+      });
+    }
+
+    y += cardH + 16;
+  });
+
+  // Footer
+  y += 10;
+  ctx.fillStyle = 'rgba(201,169,110,0.5)';
+  ctx.font = '12px "Noto Serif SC", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('-- 蛤蟆先生的心灵之旅 --', W / 2, y + 20);
+
+  // Download
+  const link = document.createElement('a');
+  link.download = '蛤蟆先生的心灵之旅-领悟卡片.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  const paragraphs = text.split('\n');
+  paragraphs.forEach(para => {
+    if (!para.trim()) { lines.push(''); return; }
+    let line = '';
+    for (let i = 0; i < para.length; i++) {
+      const testLine = line + para[i];
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        lines.push(line);
+        line = para[i];
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) lines.push(line);
+  });
+  return lines;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ========== INIT ==========
+async function initGame() {
+  // Setup game screen HTML
+  $('#game-screen').innerHTML = `
+    <div class="game-header">
+      <div class="header-left">
+        <span class="chapter-label" id="ch-label">序章</span>
+        <div class="thermometer-bar">
+          <span class="thermo-label">情绪温度</span>
+          <div class="thermo-track"><div class="thermo-fill"></div></div>
+          <span class="thermo-val">1.5</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="ego-badges">
+          <span class="ego-badge child active" data-type="child">儿童</span>
+          <span class="ego-badge parent locked" data-type="parent">父母</span>
+          <span class="ego-badge adult locked" data-type="adult">成人</span>
+        </div>
+      </div>
+    </div>
+    <div class="game-body">
+      <div class="scene-bg"></div>
+      <div class="dialogue-area">
+        <div class="dialogue-history"></div>
+      </div>
+      <div class="input-area"></div>
+    </div>`;
+  $('#ending-screen').innerHTML = '<div class="ending-content"></div>';
+  updateThermometer();
+  updateEgoBadges();
+  buildChapters();
+  switchScreen('game-screen');
+  AudioEngine.playBGM('sad');
+  await showChapterTransition('一', '整个人都不太好');
+  $('#ch-label').textContent = '第一章';
+  setBackground('toad_hall');
+  runStep();
+}
+
+// ========== PRELOAD & TITLE ==========
+window.addEventListener('DOMContentLoaded', () => {
+  // Preload images
+  const imgs = Object.values(SCENES).concat(Object.values(AVATARS));
+  let loaded = 0;
+  const total = imgs.length;
+  imgs.forEach(src => {
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      loaded++;
+      if (loaded >= total) {
+        // Show title
+        const ts = $('#title-screen');
+        ts.style.backgroundImage = `url(${SCENES.title})`;
+        ts.innerHTML = `
+          <div class="title-content">
+            <h1>蛤蟆先生的心灵之旅</h1>
+            <p class="subtitle">一场关于自我发现的冒险</p>
+            <button class="title-btn" id="start-btn">开始旅程</button>
+          </div>`;
+        switchScreen('title-screen');
+        $('#start-btn').addEventListener('click', () => {
+          AudioEngine.init();
+          AudioEngine.playClick();
+          initGame();
+        });
+      }
+    };
+    img.src = src;
+  });
+});
+
+// ========== BUILD CHAPTERS (all game content) ==========
+function buildChapters() {
+CHAPTERS = [
+// ===== CHAPTER 1: 整个人都不太好 =====
+{
+  steps: [
+    // 1-1: Opening narration
+    async function() {
+      await DialogueEngine.typeMessage(null, '蛤蟆庄园。曾经热闹非凡的大宅，如今笼罩在一片灰暗之中。花园杂草丛生，窗帘紧闭，空气中弥漫着尘土和落寞的气息。', 'narrator');
+      await new Promise(r => setTimeout(r, 600));
+      await DialogueEngine.typeMessage(null, '蛤蟆先生已经很久没有出门了。他蜷缩在扶手椅里，目光呆滞地望着地面。曾经那个爱冒险、爱炫耀的蛤蟆，似乎已经不存在了。', 'narrator');
+      await waitContinue().then(nextStep);
+    },
+    // 1-2: Friends arrive
+    async function() {
+      await DialogueEngine.typeMessage(null, '一阵急促的敲门声打破了沉寂。', 'narrator');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('rat', '蛤蟆！我们来看你了，快开门！');
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage('mole', '我们都很担心你......', 'npc');
+      await waitContinue().then(nextStep);
+    },
+    // 1-3: Badger takes charge
+    async function() {
+      setBackground('friends');
+      await DialogueEngine.typeMessage('badger', '蛤蟆，看看你现在这个样子！你已经把自己搞得一塌糊涂。听我的，你必须去看一个心理咨询师。我已经帮你约好了，名叫苍鹭。', 'npc');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage(null, '老獾的语气不容置疑，就像你父亲曾经对你说话的方式一样。你感到一种熟悉的压迫感。', 'narrator');
+      AudioEngine.playHeartbeat();
+      const choice = await waitChoice([
+        { text: '顺从地点头：好的......我去。', selfText: '好的......我去。', effect: 'comply' },
+        { text: '沉默不语，什么也说不出来。', selfText: '......', effect: 'silent' },
+        { text: '勉强挤出一丝微笑：谢谢你们关心我。', selfText: '谢谢你们......关心我。', effect: 'please' }
+      ]);
+      GameState.choicesMade.openingResponse = choice.effect;
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage(null, '无论你如何回应，结果都一样 -- 你答应了去见苍鹭咨询师。不是因为你想去，而是因为你不知道如何拒绝。', 'narrator');
+      await showInsight('适应型儿童', '你是否注意到？你答应去看心理咨询师，并不是因为自己想要改变，而是为了满足朋友们的期望。这种模式叫做「适应型儿童」-- 我们在童年时学会的生存策略，长大后依然在无意识地使用。', '每个人生来都是王子，却被父母变成了青蛙。');
+      nextStep();
+    },
+    // 1-4: First visit to Heron
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('calm');
+      await showChapterTransition('二', '初见咨询师');
+      $('#ch-label').textContent = '第二章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage(null, '你来到了苍鹭咨询师的办公室。温暖的阳光透过窗户洒进来，两把扶手椅面对面摆放着，桌上放着一壶茶。这里感觉......安全。', 'narrator');
+      await new Promise(r => setTimeout(r, 500));
+      await DialogueEngine.typeMessage('heron', '欢迎。请坐。');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '在我们开始之前，我需要问你一个重要的问题。');
+      await waitContinue().then(nextStep);
+    },
+    // 1-5: The key question
+    async function() {
+      await DialogueEngine.typeMessage('heron', '你来这里，是为了你自己，还是为了你的朋友们？');
+      AudioEngine.playHeartbeat();
+      const choice = await waitChoice([
+        { text: '老实说，是朋友让我来的。', selfText: '说实话......是我的朋友们让我来的。', effect: 'honest' },
+        { text: '我......不确定。', selfText: '我不确定......', effect: 'unsure' },
+        { text: '当然是为了我自己。（说谎）', selfText: '当然是为了我自己。', effect: 'lie' }
+      ]);
+      await new Promise(r => setTimeout(r, 400));
+      if (choice.effect === 'lie') {
+        await DialogueEngine.typeMessage('heron', '真的吗？我感觉你说这话的时候，眼神里有些犹豫。');
+      }
+      await DialogueEngine.typeMessage('heron', '我理解。但你要知道，心理咨询只有在来访者自愿的情况下才有效。你的朋友们是出于好意，但他们才是「我的委托人」-- 而你现在并不是。');
+      await new Promise(r => setTimeout(r, 500));
+      await DialogueEngine.typeMessage('heron', '只有当你为了自己而来，而不是为了取悦别人，我们才能真正开始。你愿意为自己做出这个选择吗？');
+      const choice2 = await waitChoice([
+        { text: '我......愿意试试。为了我自己。', selfText: '我愿意试试。这一次，为了我自己。', effect: 'yes' },
+        { text: '（沉默片刻后点头）', selfText: '......（点了点头）', effect: 'nod' }
+      ]);
+      GameState.temperature = 2;
+      updateThermometer();
+      await showInsight('自愿原则', '这是你人生中少有的时刻 -- 有人问你「你自己想要什么」，而不是告诉你「你应该怎么做」。心理咨询的第一步，是你为自己做出选择：我要为自己的人生负责。', '咨询是一个自愿的过程。只有当你为了自己而来，我们才能真正开始。');
+      nextStep();
+    }
+  ]
+},
+// ===== CHAPTER 2: 情绪温度计 - Session 1 =====
+{
+  steps: [
+    async function() {
+      await showChapterTransition('三', '情绪温度计');
+      $('#ch-label').textContent = '第三章';
+      DialogueEngine.clearHistory();
+      setBackground('therapy');
+      await DialogueEngine.typeMessage(null, '第一次正式咨询。你坐在苍鹭对面，感到紧张而脆弱。', 'narrator');
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，我想先了解你现在的感受。如果用1到10来衡量你的情绪状态，1代表极度低落，10代表非常快乐，你觉得自己现在是几分？');
+      // Interactive thermometer widget
+      DialogueEngine.showWidget(`
+        <div class="widget-container thermo-widget">
+          <div class="widget-title">-- 你的情绪温度 --</div>
+          <p style="color:var(--text-light);font-size:13px;text-align:center;margin-bottom:12px;opacity:0.7">点击选择一个分数</p>
+          <div class="thermo-visual" id="thermo-select">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<div class="thermo-dot" data-val="${n}">${n}</div>`).join('')}
+          </div>
+          <div class="thermo-result" id="thermo-result"></div>
+          <button class="continue-btn" id="thermo-confirm" style="display:none;margin-top:12px">确认</button>
+        </div>`, () => {
+        let selected = 0;
+        $$('#thermo-select .thermo-dot').forEach(dot => {
+          dot.onclick = () => {
+            AudioEngine.playClick();
+            selected = parseInt(dot.dataset.val);
+            $$('#thermo-select .thermo-dot').forEach(d => d.classList.remove('selected'));
+            dot.classList.add('selected');
+            const result = $('#thermo-result');
+            const texts = {
+              1: '几乎感受不到任何希望......', 2: '非常低落，一切都很灰暗。',
+              3: '不太好，但还在坚持。', 4: '有些沮丧，提不起精神。',
+              5: '还行，好坏参半。', 6: '比较平静。',
+              7: '感觉不错。', 8: '挺好的，比较乐观。',
+              9: '非常好！', 10: '完美，充满活力！'
+            };
+            result.textContent = texts[selected];
+            result.style.opacity = 1;
+            $('#thermo-confirm').style.display = 'block';
+          };
+        });
+        $('#thermo-confirm').onclick = async () => {
+          AudioEngine.playReveal();
+          // Always start low to match the book
+          GameState.temperature = Math.min(selected, 3);
+          updateThermometer();
+          DialogueEngine.clearInput();
+          DialogueEngine.addMessage('toad', `我觉得......大概${selected}分吧。`, 'self');
+          await new Promise(r => setTimeout(r, 400));
+          if (selected <= 3) {
+            await DialogueEngine.typeMessage('heron', '谢谢你的坦诚。这个分数说明你正在经历很深的痛苦。但你愿意来到这里，本身就已经是一种勇气。');
+          } else {
+            await DialogueEngine.typeMessage('heron', '你说的是你真实的感受吗？还是你习惯性地想让别人觉得你「还好」？');
+            await new Promise(r => setTimeout(r, 300));
+            await DialogueEngine.typeMessage('heron', '很多人在最痛苦的时候，反而会给自己打一个偏高的分数。因为承认自己的脆弱，是一件很难的事。');
+            GameState.temperature = 1.5;
+            updateThermometer();
+          }
+          await showInsight('情绪温度计', '学会给自己的情绪打分，是自我觉察的第一步。很多时候，我们甚至不知道自己有多痛苦，因为我们已经习惯了压抑和忽略自己的感受。承认「我现在很不好」，需要巨大的勇气。', '理解你的感受，而不是否认它们 -- 无论是通过忽视还是压抑。');
+          nextStep();
+        };
+      });
+    },
+    // 2-2: Child ego state introduction
+    async function() {
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，你知道吗？我们每个人内心都住着一个小孩。这个小孩有着最原始的情感 -- 快乐、愤怒、悲伤、恐惧。这些就像颜色的三原色，是我们与生俱来的。');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '但随着成长，为了应对父母和外界的压力，这个小孩学会了各种「生存策略」。有人学会了讨好，有人学会了沉默，有人学会了叛逆。');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '现在，让我们来认识一下你内心的这个小孩。以下这些情绪，你最常感受到哪些？');
+      // Emotion card selection widget
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 认识你的内在小孩 --</div>
+          <p style="color:var(--text-light);font-size:12px;text-align:center;margin-bottom:12px;opacity:0.6">选择你最常感受到的情绪（可多选）</p>
+          <div class="emotion-cards" id="emotion-cards">
+            <div class="emotion-card" data-emotion="guilty" data-type="adapted"><div class="emotion-icon" style="color:#e07070">&#9679;</div>内疚</div>
+            <div class="emotion-card" data-emotion="please" data-type="adapted"><div class="emotion-icon" style="color:#e8a87c">&#9679;</div>讨好</div>
+            <div class="emotion-card" data-emotion="fear" data-type="natural"><div class="emotion-icon" style="color:#85c1e9">&#9679;</div>恐惧</div>
+            <div class="emotion-card" data-emotion="anger" data-type="natural"><div class="emotion-icon" style="color:#e74c3c">&#9679;</div>愤怒</div>
+            <div class="emotion-card" data-emotion="sad" data-type="natural"><div class="emotion-icon" style="color:#7fb3d8">&#9679;</div>悲伤</div>
+            <div class="emotion-card" data-emotion="withdraw" data-type="adapted"><div class="emotion-icon" style="color:#95a5a6">&#9679;</div>退缩</div>
+            <div class="emotion-card" data-emotion="joy" data-type="natural"><div class="emotion-icon" style="color:#f1c40f">&#9679;</div>快乐</div>
+            <div class="emotion-card" data-emotion="depend" data-type="adapted"><div class="emotion-icon" style="color:#bb8fce">&#9679;</div>依赖</div>
+          </div>
+          <button class="continue-btn" id="emotion-confirm" style="margin-top:14px">确认选择</button>
+        </div>`, () => {
+        const sel = new Set();
+        $$('#emotion-cards .emotion-card').forEach(card => {
+          card.onclick = () => {
+            AudioEngine.playClick();
+            const e = card.dataset.emotion;
+            if (sel.has(e)) { sel.delete(e); card.classList.remove('selected'); }
+            else { sel.add(e); card.classList.add('selected'); }
+          };
+        });
+        $('#emotion-confirm').onclick = async () => {
+          AudioEngine.playReveal();
+          DialogueEngine.clearInput();
+          const adapted = [...sel].filter(e => {
+            const card = document.querySelector(`[data-emotion="${e}"]`);
+            return card && card.dataset.type === 'adapted';
+          });
+          const natural = [...sel].filter(e => {
+            const card = document.querySelector(`[data-emotion="${e}"]`);
+            return card && card.dataset.type === 'natural';
+          });
+          if (adapted.length >= natural.length && adapted.length > 0) {
+            await DialogueEngine.typeMessage('heron', '我注意到，你选择的很多情绪都属于「适应型儿童」的范畴 -- 内疚、讨好、退缩、依赖。这些不是你天生的情绪，而是你在成长过程中，为了应对严厉的环境而学会的。');
+          } else {
+            await DialogueEngine.typeMessage('heron', '你对自己的基本情绪有一定的觉察。但我想邀请你思考：在这些情绪之下，是否还隐藏着一些你不敢面对的感受？');
+          }
+          GameState.stamps += 1;
+          await showInsight('自然型儿童 vs 适应型儿童', '快乐、愤怒、悲伤、恐惧 -- 这是每个人与生俱来的「自然型儿童」情绪，就像红黄蓝三原色。\n\n而内疚、讨好、退缩、依赖 -- 这些是「适应型儿童」的行为，是我们在童年时为了应对强大的父母而发展出来的生存策略。\n\n了解这个区别，是认识自己的第一步。', '理解你的童年就是理解你自己。');
+          nextStep();
+        };
+      });
+    }
+  ]
+},
+// ===== CHAPTER 3: 探索童年 =====
+{
+  steps: [
+    async function() {
+      setBackground('childhood');
+      AudioEngine.playBGM('tense');
+      await showChapterTransition('四', '探索童年');
+      $('#ch-label').textContent = '第四章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage(null, '第三次咨询。苍鹭引导你回到记忆深处......', 'narrator');
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，请你闭上眼睛。试着回忆你小时候，在家里吃晚饭时的情景。你能看到什么？');
+      AudioEngine.playHeartbeat();
+      await new Promise(r => setTimeout(r, 800));
+      await DialogueEngine.typeMessage(null, '记忆的画面渐渐浮现......一个冰冷的大餐厅，长长的餐桌，你坐在一端，父亲坐在另一端。中间是沉默。', 'narrator');
+      await waitContinue().then(nextStep);
+    },
+    // Memory puzzle - matching childhood experiences to adult patterns
+    async function() {
+      await DialogueEngine.typeMessage('heron', '让我们来做一个练习。你的童年经历如何塑造了你现在的行为模式？请把上面的童年记忆和下面的成年行为配对连接起来。');
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 童年的影子 --</div>
+          <p style="color:var(--text-light);font-size:12px;text-align:center;margin-bottom:12px;opacity:0.6">点击每个记忆碎片，发现它如何影响你的现在</p>
+          <div class="memory-grid" id="memory-grid">
+            <div class="memory-tile" data-pair="1" data-side="a">父亲总是批评我做得不够好</div>
+            <div class="memory-tile" data-pair="2" data-side="a">母亲从不表达自己的意见</div>
+            <div class="memory-tile" data-pair="3" data-side="a">家里从不讨论感受</div>
+            <div class="memory-tile" data-pair="1" data-side="b">总觉得自己不够好，害怕犯错</div>
+            <div class="memory-tile" data-pair="3" data-side="b">不知道如何表达自己的情绪</div>
+            <div class="memory-tile" data-pair="2" data-side="b">习惯顺从，不敢说出真实想法</div>
+          </div>
+          <div id="match-feedback" style="color:var(--accent);font-size:13px;text-align:center;margin-top:10px;min-height:20px"></div>
+        </div>`, () => {
+        let firstPick = null;
+        let matched = 0;
+        $$('#memory-grid .memory-tile').forEach(tile => {
+          tile.onclick = () => {
+            if (tile.classList.contains('matched')) return;
+            AudioEngine.playClick();
+            if (!firstPick) {
+              firstPick = tile;
+              tile.classList.add('revealed');
+            } else {
+              if (firstPick === tile) return;
+              tile.classList.add('revealed');
+              if (firstPick.dataset.pair === tile.dataset.pair && firstPick.dataset.side !== tile.dataset.side) {
+                AudioEngine.playCorrect();
+                firstPick.classList.add('matched');
+                tile.classList.add('matched');
+                matched++;
+                const fb = $('#match-feedback');
+                const feedbacks = ['童年的批评变成了内心的自我否定......', '母亲的沉默教会了你压抑自己......', '无法谈论感受，情绪就像被截肢一样......'];
+                fb.textContent = feedbacks[parseInt(firstPick.dataset.pair) - 1];
+                firstPick = null;
+                if (matched >= 3) {
+                  setTimeout(async () => {
+                    DialogueEngine.clearInput();
+                    GameState.temperature = Math.max(GameState.temperature - 0.5, 1);
+                    updateThermometer();
+                    await DialogueEngine.typeMessage('heron', '挖掘这些记忆是痛苦的。你的情绪温度可能暂时下降了。但这是必要的过程 -- 要治愈伤口，就必须先让它暴露出来。');
+                    await showInsight('黎明前的黑暗', '在心理咨询中，探索童年创伤时，情况往往会「先变糟再变好」。就像清理一个发炎的伤口，必须先打开它，感受疼痛，然后才能真正愈合。\n\n你的痛苦不是倒退，而是进步的信号。', '你必须与你的情绪建立联系，理解它们。如果你否认它们，就像截肢一样，你会成为一个残缺的人。');
+                    nextStep();
+                  }, 600);
+                }
+              } else {
+                AudioEngine.playWrong();
+                setTimeout(() => {
+                  firstPick.classList.remove('revealed');
+                  tile.classList.remove('revealed');
+                  firstPick = null;
+                }, 600);
+              }
+            }
+          };
+        });
+      });
+    }
+  ]
+},
+// ===== CHAPTER 4: 愤怒的表达 =====
+{
+  steps: [
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('tense');
+      await showChapterTransition('五', '愤怒的表达');
+      $('#ch-label').textContent = '第五章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，你有没有注意到，你很少直接表达愤怒？');
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage('toad', '愤怒？我......我确实会生气，但我总觉得生气是不对的。', 'self');
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage('heron', '愤怒是一种正常的情绪，但「适应型儿童」会用各种间接的方式来表达它。让我给你看一个「愤怒的表达谱系」。');
+      await waitContinue().then(nextStep);
+    },
+    // Anger spectrum interactive
+    async function() {
+      await DialogueEngine.typeMessage('heron', '从最强烈到最微弱，人们表达愤怒的方式各不相同。你通常在哪个位置？');
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 愤怒表达谱系 --</div>
+          <p style="color:var(--text-light);font-size:12px;text-align:center;margin-bottom:16px;opacity:0.6">从左（最强烈）到右（最微弱），选择你最常使用的表达方式</p>
+          <div class="anger-spectrum" id="anger-spectrum">
+            <div class="anger-point" data-idx="0" data-label="叛逆">叛逆</div>
+            <div class="anger-point" data-idx="1" data-label="撒泼">撒泼</div>
+            <div class="anger-point" data-idx="2" data-label="怄气">怄气</div>
+            <div class="anger-point" data-idx="3" data-label="任性">任性</div>
+            <div class="anger-point" data-idx="4" data-label="郁闷">郁闷</div>
+            <div class="anger-point" data-idx="5" data-label="拖延">拖延</div>
+            <div class="anger-point" data-idx="6" data-label="厌烦">厌烦</div>
+            <div class="anger-point" data-idx="7" data-label="退缩">退缩</div>
+          </div>
+          <div class="anger-label" id="anger-desc" style="min-height:40px;margin-top:12px"></div>
+          <button class="continue-btn" id="anger-confirm" style="display:none;margin-top:10px">这就是我</button>
+        </div>`, () => {
+        const descs = [
+          '叛逆 -- 最强烈的反抗，直接与权威对抗',
+          '撒泼 -- 情绪爆发，大哭大闹',
+          '怄气 -- 生闷气，拒绝沟通，冷战',
+          '任性 -- 故意做对方不喜欢的事',
+          '郁闷 -- 持续的低落情绪，闷闷不乐',
+          '拖延 -- 用「不做」来表达抗议',
+          '厌烦 -- 对一切失去兴趣',
+          '退缩 -- 最微弱的表达，完全回避和隐藏'
+        ];
+        let sel = -1;
+        $$('#anger-spectrum .anger-point').forEach(p => {
+          p.onclick = () => {
+            AudioEngine.playClick();
+            sel = parseInt(p.dataset.idx);
+            $$('#anger-spectrum .anger-point').forEach(pp => pp.classList.remove('selected'));
+            p.classList.add('selected');
+            $('#anger-desc').textContent = descs[sel];
+            $('#anger-confirm').style.display = 'block';
+          };
+        });
+        $('#anger-confirm').onclick = async () => {
+          AudioEngine.playReveal();
+          DialogueEngine.clearInput();
+          GameState.choicesMade.angerStyle = sel;
+          if (sel >= 4) {
+            await DialogueEngine.typeMessage('heron', '你选择了较为温和的愤怒表达方式。这说明你可能在童年时就学会了压抑自己的愤怒。因为直接表达对你来说太危险了 -- 你害怕被惩罚，或者失去爱。');
+          } else {
+            await DialogueEngine.typeMessage('heron', '有趣。你的愤怒表达方式比较直接，但我想知道 -- 在你发完火之后，你通常会怎样？是不是很快就会感到内疚？');
+          }
+          GameState.temperature = 5;
+          updateThermometer();
+          await DialogueEngine.typeMessage(null, '你的情绪温度上升到了5分。认识到自己的愤怒模式，让你感觉轻松了一些。', 'narrator');
+          await showInsight('愤怒的真相', '愤怒本身不是坏事 -- 它是一种保护自己的力量。但当我们学会用间接的方式表达愤怒（怄气、拖延、退缩），我们实际上是在伤害自己。\n\n抑郁，在某种程度上，就是朝向内在的愤怒。当你不允许自己对外界生气时，这股愤怒就转向了自己。', '怄气是弱者面对强者时的反应。');
+          nextStep();
+        };
+      });
+    }
+  ]
+},
+// ===== CHAPTER 5: 秘密协议 & 父母自我状态 =====
+{
+  steps: [
+    async function() {
+      setBackground('toad_hall');
+      AudioEngine.playBGM('tense');
+      await showChapterTransition('六', '意外来访');
+      $('#ch-label').textContent = '第六章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage(null, '在两次咨询之间，老獾突然来到蛤蟆庄园。', 'narrator');
+      await DialogueEngine.typeMessage('badger', '蛤蟆，我直说了。我觉得你应该辞去校董的职务。你现在这个状态，根本不适合继续担任。我已经和其他几位校董谈过了......');
+      AudioEngine.playHeartbeat();
+      await new Promise(r => setTimeout(r, 500));
+      await DialogueEngine.typeMessage(null, '你感到一股熟悉的愤怒涌上来。这种感觉......你在哪里体验过？', 'narrator');
+      const choice = await waitChoice([
+        { text: '（忍住怒火）也许你说得对，我确实做得不好......', selfText: '也许......你说得对。', effect: 'submit' },
+        { text: '（直接表达）你凭什么替我做决定？你在背后做这些让我很愤怒！', selfText: '你凭什么替我做决定？！这让我非常生气！', effect: 'confront' },
+        { text: '（冷淡回应）知道了。你想怎样就怎样吧。', selfText: '知道了。随便你。', effect: 'withdraw' }
+      ]);
+      GameState.choicesMade.badgerResponse = choice.effect;
+      if (choice.effect === 'confront') {
+        GameState.temperature += 0.5;
+        updateThermometer();
+        await DialogueEngine.typeMessage('badger', '......你从来没有这样跟我说过话。');
+        await DialogueEngine.typeMessage(null, '老獾惊讶地看着你。你自己也惊讶 -- 这种直接表达愤怒的感觉，既可怕又......解放。', 'narrator');
+      } else {
+        GameState.stamps += 1;
+        await DialogueEngine.typeMessage(null, '你又一次妥协了。一枚新的「情绪邮票」悄悄收进了你的口袋。', 'narrator');
+      }
+      await waitContinue().then(nextStep);
+    },
+    // Session 5: Parent ego state & collusion
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('calm');
+      await showChapterTransition('七', '秘密协议');
+      $('#ch-label').textContent = '第七章';
+      DialogueEngine.clearHistory();
+      GameState.egoStates.parent = true;
+      updateEgoBadges();
+      await DialogueEngine.typeMessage(null, '你把老獾来访的事告诉了苍鹭。', 'narrator');
+      await DialogueEngine.typeMessage('heron', '你描述的老獾的行为，让我想到一个概念 -- 「父母自我状态」。你有没有觉得老獾对你说话的方式，和你父亲很像？');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('toad', '......完全一样。那种居高临下的、不容反驳的感觉。', 'self');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '这就是「挑剔型父母」的声音。但更重要的是 -- 蛤蟆先生，我要告诉你一个可能让你不舒服的真相。');
+      await new Promise(r => setTimeout(r, 600));
+      await DialogueEngine.typeMessage('heron', '当老獾扮演「挑剔型父母」的角色时，你会自动切换到「适应型儿童」的角色。你们之间有一种「秘密协议」-- 他居高临下，你就卑微顺从。这不是巧合，而是你们共同参与的一场游戏。');
+      AudioEngine.playHeartbeat();
+      await new Promise(r => setTimeout(r, 500));
+      await DialogueEngine.typeMessage('heron', '也就是说......那些让你不开心的结局，你并不完全是「受害者」。你是参与者。');
+      await showInsight('共谋与秘密协议', '这可能是最令人不安的领悟：我们人生中许多不愉快的结局，并不完全是「坏运气」。我们在无意识中「配合」他人，共同创造了这些结果。\n\n当有人扮演「挑剔型父母」时，你自动切换为「顺从的小孩」-- 这就是你们之间的「秘密协议」。打破这个协议的第一步，是意识到它的存在。', '没有一种批判比自我批判更强烈，也没有一个法官比我们自己更严苛。');
+      nextStep();
+    }
+  ]
+},
+// ===== CHAPTER 6: 成人自我状态 =====
+{
+  steps: [
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('hopeful');
+      await showChapterTransition('八', '蛤蟆先生的选择');
+      $('#ch-label').textContent = '第八章';
+      DialogueEngine.clearHistory();
+      GameState.egoStates.adult = true;
+      updateEgoBadges();
+      await DialogueEngine.typeMessage(null, '第六次咨询。你明显感到自己有了变化 -- 更有力量，也更清醒。', 'narrator');
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，你看起来不一样了。');
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage('toad', '我感觉到了。好像有一团光在我内心慢慢亮起来。', 'self');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '我很高兴。今天，我想给你介绍第三种自我状态 -- 「成人自我状态」。');
+      await DialogueEngine.typeMessage('heron', '在成人状态里，我们可以思考、计划、做决定、采取行动。我们不被过去父母的声音驱使，也不被童年的情绪淹没。我们的全部知识和能力都可以被调用。');
+      await waitContinue().then(nextStep);
+    },
+    async function() {
+      await DialogueEngine.typeMessage('heron', '但在我们继续之前，我有一个问题要问你 --');
+      await new Promise(r => setTimeout(r, 600));
+      AudioEngine.playHeartbeat();
+      await DialogueEngine.typeMessage('heron', '你打算什么时候才能不再责怪别人，为自己的不快乐负责？');
+      await new Promise(r => setTimeout(r, 800));
+      await DialogueEngine.typeMessage(null, '这句话像一道闪电划过你的内心。', 'narrator');
+      const choice = await waitChoice([
+        { text: '（感到被冒犯）你这话什么意思？我确实是被人伤害了！', selfText: '你这话是什么意思？我确实是受害者！', effect: 'defensive' },
+        { text: '（沉默......然后承认）你说得对。是我一直在逃避。', selfText: '......你说得对。我一直在把责任推给别人。', effect: 'accept' },
+        { text: '（眼眶湿润）我......不知道该怎么做。', selfText: '我不知道该怎么做......但我不想再这样了。', effect: 'vulnerable' }
+      ]);
+      if (choice.effect === 'defensive') {
+        await DialogueEngine.typeMessage('heron', '我理解你的愤怒。但请注意 -- 你现在的反应，恰恰证明了你仍然在「适应型儿童」的状态里。你能尝试从「成人状态」来思考这个问题吗？');
+      } else if (choice.effect === 'accept') {
+        GameState.temperature += 1;
+        updateThermometer();
+        await DialogueEngine.typeMessage('heron', '这需要极大的勇气。你正在做一件很多人一辈子都不敢做的事 -- 真正为自己的人生负责。');
+      } else {
+        GameState.temperature += 0.5;
+        updateThermometer();
+        await DialogueEngine.typeMessage('heron', '不知道也没关系。重要的是你愿意开始。你能不能试着对自己好一点？也许最重要的问题是：你能不能开始爱自己？');
+      }
+      await showInsight('成人自我状态', '三种自我状态 -- 儿童、父母、成人 -- 对于健全的人生缺一不可。\n\n关键不是消除某种状态，而是拥有「自由选择」的能力：在需要感受时允许自己感受（儿童），在需要关怀时给予关怀（父母），在需要理性思考时保持清醒（成人）。\n\n真正的成长，是从「被动反应」到「主动选择」。', '在成人状态里，我们可以计划、思考、决定和行动。我们不被过去父母的声音驱使，也不被童年的情绪淹没。');
+      nextStep();
+    }
+  ]
+},
+// ===== CHAPTER 7: 人生坐标 =====
+{
+  steps: [
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('calm');
+      await showChapterTransition('九', '人生坐标');
+      $('#ch-label').textContent = '第九章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，今天我们来谈一个非常重要的概念 -- 「人生坐标」。它描述的是你对自己和他人的基本态度。一共有四种：');
+      await waitContinue().then(nextStep);
+    },
+    // Life position quadrant interactive
+    async function() {
+      await DialogueEngine.typeMessage('heron', '请你仔细看这四个象限。先感受一下，然后选择你认为自己目前最常处于的位置。');
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 四种人生坐标 --</div>
+          <div class="quadrant-grid" id="quad-grid">
+            <div class="quadrant-cell q1" data-pos="notok-ok">
+              <div style="font-size:16px;margin-bottom:6px;font-weight:600">我不好，你好</div>
+              <div style="font-size:11px;opacity:0.8">总觉得自己不如人<br>习惯性讨好和顺从<br>内心充满自我否定</div>
+            </div>
+            <div class="quadrant-cell q4" data-pos="ok-ok">
+              <div style="font-size:16px;margin-bottom:6px;font-weight:600">我好，你也好</div>
+              <div style="font-size:11px;opacity:0.8">接纳自己也接纳他人<br>可以合作也可以独立<br>内心平和有力量</div>
+            </div>
+            <div class="quadrant-cell q2" data-pos="notok-notok">
+              <div style="font-size:16px;margin-bottom:6px;font-weight:600">我不好，你也不好</div>
+              <div style="font-size:11px;opacity:0.8">对世界失去希望<br>觉得一切都没有意义<br>深度绝望与虚无</div>
+            </div>
+            <div class="quadrant-cell q3" data-pos="ok-notok">
+              <div style="font-size:16px;margin-bottom:6px;font-weight:600">我好，你不好</div>
+              <div style="font-size:11px;opacity:0.8">总觉得别人有问题<br>喜欢批评和指责他人<br>用优越感掩盖脆弱</div>
+            </div>
+          </div>
+          <div id="quad-feedback" style="color:var(--text-light);font-size:13px;text-align:center;margin-top:12px;min-height:20px;line-height:1.6"></div>
+          <button class="continue-btn" id="quad-confirm" style="display:none;margin-top:10px">确认</button>
+        </div>`, () => {
+        let sel = null;
+        $$('#quad-grid .quadrant-cell').forEach(cell => {
+          cell.onclick = () => {
+            AudioEngine.playClick();
+            $$('#quad-grid .quadrant-cell').forEach(c => c.classList.remove('selected'));
+            cell.classList.add('selected');
+            sel = cell.dataset.pos;
+            const feedbacks = {
+              'notok-ok': '你选择了「我不好，你好」-- 这正是蛤蟆先生大半生的人生坐标。总觉得自己不够好，不配被爱。',
+              'ok-ok': '你选择了最健康的人生坐标。但请思考：这是你「真正相信的」，还是你「觉得应该选的」？',
+              'notok-notok': '这是最令人绝望的位置。如果你真的经常处于这里，请记住：这不是永恒的，你正在这里寻找出路。',
+              'ok-notok': '你选择了「我好，你不好」。这种姿态看似强大，但内心可能隐藏着恐惧和脆弱。像老獾一样，用控制掩盖不安。'
+            };
+            $('#quad-feedback').textContent = feedbacks[sel];
+            $('#quad-confirm').style.display = 'block';
+          };
+        });
+        $('#quad-confirm').onclick = async () => {
+          AudioEngine.playReveal();
+          DialogueEngine.clearInput();
+          GameState.choicesMade.lifePosition = sel;
+          await DialogueEngine.typeMessage('heron', '蛤蟆先生大部分时间都生活在「我不好，你好」的位置 -- 这让他不断讨好别人，否定自己。而老獾则经常处于「我好，你不好」-- 用批评和控制来维护自己的权威。');
+          await new Promise(r => setTimeout(r, 400));
+          await DialogueEngine.typeMessage('heron', '我们的目标，是走向「我好，你也好」。但这不是一次性的决定，而是一个终身的承诺。你不能像登上珠穆朗玛峰那样说「好，我到了」。它是一个动态的、需要不断选择的过程。');
+          GameState.temperature = 7;
+          updateThermometer();
+          await showInsight('四种人生坐标', '我们在童年时就做出了对「我」和「他人」的基本判断，这个判断会塑造我们整个人生的模式。\n\n「我不好，你好」-- 导致讨好和抑郁\n「我好，你不好」-- 导致批判和孤立\n「我不好，你也不好」-- 导致绝望\n「我好，你也好」-- 通往真正的自由\n\n选择「我好，你也好」不是一座要登上的山峰，而是一条每天都要走的路。', '这不是一个静态的状态，而是一个动态的过程。你不能说「我到了」。');
+          nextStep();
+        };
+      });
+    }
+  ]
+},
+// ===== CHAPTER 8: 情绪邮票 & 心理游戏 =====
+{
+  steps: [
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('warm');
+      await showChapterTransition('十', '心理游戏');
+      $('#ch-label').textContent = '第十章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，你有没有过这样的体验 -- 积攒了很久的怨气，突然在某个小事上完全爆发？');
+      await new Promise(r => setTimeout(r, 300));
+      await DialogueEngine.typeMessage('toad', '有过。有时候别人做了一件很小的事，我就突然崩溃了。事后我自己也觉得莫名其妙。', 'self');
+      await new Promise(r => setTimeout(r, 400));
+      await DialogueEngine.typeMessage('heron', '这就是「情绪邮票」的运作方式。每一次你压抑了不满却没有处理，就等于收集了一张负面情绪的「邮票」。当邮票积攒够了，你就会去「兑换」-- 要么大爆发，要么彻底崩溃。');
+      await waitContinue().then(nextStep);
+    },
+    // Stamp release interactive
+    async function() {
+      await DialogueEngine.typeMessage('heron', '让我们来看看你可能收集了哪些「情绪邮票」。点击那些你愿意释放的邮票 -- 承认它、感受它、然后放下它。');
+      const stampLabels = ['被忽视', '被批评', '不被理解', '自我否定', '害怕冲突', '不敢说不', '假装开心', '压抑愤怒'];
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 释放情绪邮票 --</div>
+          <p style="color:var(--text-light);font-size:12px;text-align:center;margin-bottom:12px;opacity:0.6">点击每张邮票来释放它</p>
+          <div class="stamps-container" id="stamp-grid">
+            ${stampLabels.map((l, i) => `<div class="stamp negative" data-idx="${i}"><span style="font-size:11px">${l}</span></div>`).join('')}
+          </div>
+          <div class="stamp-count" id="stamp-count">已释放: 0 / ${stampLabels.length}</div>
+          <button class="continue-btn" id="stamp-done" style="display:none;margin-top:10px">完成释放</button>
+        </div>`, () => {
+        let released = 0;
+        $$('#stamp-grid .stamp').forEach(s => {
+          s.onclick = () => {
+            if (s.classList.contains('released')) return;
+            AudioEngine.playStampRelease();
+            s.classList.add('released');
+            released++;
+            $('#stamp-count').textContent = `已释放: ${released} / ${stampLabels.length}`;
+            if (released >= 4) {
+              $('#stamp-done').style.display = 'block';
+            }
+          };
+        });
+        $('#stamp-done').onclick = async () => {
+          DialogueEngine.clearInput();
+          GameState.temperature += 1;
+          GameState.stamps = Math.max(0, GameState.stamps - released);
+          updateThermometer();
+          await DialogueEngine.typeMessage('heron', `你释放了${released}张情绪邮票。每释放一张，就意味着你不再需要它来证明自己的痛苦。你正在学会一种新的方式来处理负面情绪 -- 不是积攒，而是面对和释放。`);
+          await new Promise(r => setTimeout(r, 500));
+          await DialogueEngine.typeMessage('heron', '还有一件重要的事。你有没有玩过一种叫「可怜弱小的我」的游戏？就是无意识地把自己放到受害者的位置，然后获得别人的同情。');
+          await DialogueEngine.typeMessage('heron', '这不是说你的痛苦不真实。而是说，你可能已经习惯了用「受害者」的身份来获得关注和安慰。这本身就是一种「心理游戏」。');
+          await showInsight('情绪邮票与心理游戏', '我们收集「情绪邮票」的方式：每次被伤害却不说出来，就攒下一张。攒够了，就去「兑换」一次大崩溃，仿佛这是自己「应得的」。\n\n而「心理游戏」是无意识的、重复的互动模式：你扮演受害者，别人扮演拯救者或迫害者，每个人都在配合演出。\n\n觉察到游戏的存在，就是停止游戏的第一步。', '每一场心理游戏本质上都是不诚实的，而结局总是富有戏剧性的。');
+          nextStep();
+        };
+      });
+    }
+  ]
+},
+// ===== CHAPTER 9: 最后一次面谈 =====
+{
+  steps: [
+    async function() {
+      setBackground('therapy');
+      AudioEngine.playBGM('hopeful');
+      await showChapterTransition('十一', '最后一次面谈');
+      $('#ch-label').textContent = '第十一章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage(null, '第十次也是最后一次咨询。阳光比以往任何时候都更加明亮地照进了苍鹭的办公室。', 'narrator');
+      await new Promise(r => setTimeout(r, 600));
+      await DialogueEngine.typeMessage('heron', '蛤蟆先生，欢迎你来到最后一次面谈。你现在给自己打几分？');
+      // Final thermometer
+      DialogueEngine.showWidget(`
+        <div class="widget-container thermo-widget">
+          <div class="widget-title">-- 最终情绪温度 --</div>
+          <div class="thermo-visual" id="final-thermo">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<div class="thermo-dot" data-val="${n}">${n}</div>`).join('')}
+          </div>
+          <div class="thermo-result" id="final-thermo-result"></div>
+          <button class="continue-btn" id="final-thermo-btn" style="display:none;margin-top:12px">确认</button>
+        </div>`, () => {
+        let sel = 0;
+        $$('#final-thermo .thermo-dot').forEach(d => {
+          d.onclick = () => {
+            AudioEngine.playClick();
+            sel = parseInt(d.dataset.val);
+            $$('#final-thermo .thermo-dot').forEach(dd => dd.classList.remove('selected'));
+            d.classList.add('selected');
+            $('#final-thermo-result').style.opacity = 1;
+            $('#final-thermo-result').textContent = sel >= 8 ? '你已经走了很远的路。' : sel >= 5 ? '还在路上，但方向已经明确了。' : '每一步都算数。';
+            $('#final-thermo-btn').style.display = 'block';
+          };
+        });
+        $('#final-thermo-btn').onclick = async () => {
+          AudioEngine.playReveal();
+          DialogueEngine.clearInput();
+          GameState.temperature = Math.max(sel, 8.5);
+          updateThermometer();
+          DialogueEngine.addMessage('toad', `我觉得是${sel}分。比起最初的1.5分，简直是另一个世界。`, 'self');
+          await new Promise(r => setTimeout(r, 500));
+          await DialogueEngine.typeMessage('heron', '从1.5到现在......你走过了一段很长的路。');
+          nextStep();
+        };
+      });
+    },
+    // Reflection and farewell
+    async function() {
+      await DialogueEngine.typeMessage('heron', '在我们结束之前，我想请你回顾这段旅程。你最大的领悟是什么？');
+      DialogueEngine.showWidget(`
+        <div class="widget-container">
+          <div class="widget-title">-- 写给自己的话 --</div>
+          <p style="color:var(--text-light);font-size:12px;text-align:center;margin-bottom:12px;opacity:0.6">写下你在这段旅程中最大的感悟</p>
+          <textarea class="reflection-box" id="reflection-input" placeholder="在这段旅程中，我学到了......"></textarea>
+          <button class="continue-btn reflection-submit" id="reflection-btn">写好了</button>
+        </div>`, () => {
+        $('#reflection-btn').onclick = async () => {
+          const text = $('#reflection-input').value.trim();
+          DialogueEngine.clearInput();
+          if (text) {
+            DialogueEngine.addMessage('toad', text, 'self');
+          } else {
+            DialogueEngine.addMessage('toad', '我学会了认识自己，不再逃避自己的感受。', 'self');
+          }
+          await new Promise(r => setTimeout(r, 500));
+          await DialogueEngine.typeMessage('heron', '蛤蟆先生，你教给我的，和我教给你的一样多。');
+          await new Promise(r => setTimeout(r, 300));
+          await DialogueEngine.typeMessage('toad', '你也学到了东西？我一直以为只有我在学。', 'self');
+          await new Promise(r => setTimeout(r, 300));
+          await DialogueEngine.typeMessage('heron', '每一段真诚的关系都是双向的。谢谢你信任我，让我陪你走过这段路。');
+          await new Promise(r => setTimeout(r, 500));
+          await DialogueEngine.typeMessage(null, '你站起来，和苍鹭握手。阳光从窗户照进来，落在你们交握的手上。', 'narrator');
+          GameState.temperature = 9.5;
+          updateThermometer();
+          await showInsight('终身的承诺', '「我好，你也好」不是终点，而是一种每天都要做出的选择。你不能像登上珠穆朗玛峰那样说「我到了」。\n\n成长的意义不在于变成完美的人，而在于拥有了选择的自由：\n-- 选择如何感受\n-- 选择如何回应\n-- 选择成为什么样的人\n\n你不再是别人期望中的那个蛤蟆。你是你自己。', '你教给我的，和我教给你的一样多。');
+          nextStep();
+        };
+      });
+    },
+    // Final choice
+    async function() {
+      setBackground('sunrise');
+      AudioEngine.playBGM('triumph');
+      await showChapterTransition('终章', '道别与新生');
+      $('#ch-label').textContent = '终章';
+      DialogueEngine.clearHistory();
+      await DialogueEngine.typeMessage(null, '你走出苍鹭的办公室，站在阳光下。整个世界看起来不一样了。不是世界变了，是你变了。', 'narrator');
+      await new Promise(r => setTimeout(r, 800));
+      await DialogueEngine.typeMessage(null, '你看到了清晨的河谷，金色的光芒铺满大地。你深吸一口气，感受着属于自己的这一刻。', 'narrator');
+      await new Promise(r => setTimeout(r, 600));
+      await DialogueEngine.typeMessage(null, '你选择了你的人生坐标 --', 'narrator');
+      const choice = await waitChoice([
+        { text: '我好，你也好。我选择相信自己，也相信他人。', selfText: '我好，你也好。', effect: 'ok-ok' },
+        { text: '我还在路上。但我已经知道了方向。', selfText: '我还在路上......但我不再迷路了。', effect: 'journey' }
+      ]);
+      await new Promise(r => setTimeout(r, 500));
+      await DialogueEngine.typeMessage(null, '从今天起，你不再是被父母变成青蛙的王子。你是找回了自己的蛤蟆先生。', 'narrator');
+      await new Promise(r => setTimeout(r, 1000));
+      // Show ending
+      showEnding();
+    }
+  ]
+}
+]; // end CHAPTERS
+} // end buildChapters
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v67327c56f0bb4ef8b305cae61679db8f1769101564043" integrity="sha512-rdcWY47ByXd76cbCFzznIcEaCN71jqkWBBqlwhF1SY7KubdLKZiEGeP7AyieKZlGP9hbY/MhGrwXzJC/HulNyg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
