@@ -62,8 +62,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 .scene-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(13,13,26,0.95) 0%,rgba(13,13,26,0.88) 30%,rgba(13,13,26,0.6) 55%,rgba(13,13,26,0.3) 100%)}
 
 /* DIALOGUE AREA */
-.dialogue-area{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0;overflow:hidden}
-.dialogue-history{flex:1;overflow-y:auto;padding:20px 16px 10px;display:flex;flex-direction:column;gap:12px;justify-content:flex-end;min-height:0;align-items:center}
+.dialogue-area{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.dialogue-history{flex:1;overflow-y:auto;padding:20px 16px 10px;display:flex;flex-direction:column;gap:12px;min-height:0;align-items:center}
+.dialogue-history::before{content:'';flex-shrink:0;min-height:40%}
 .dialogue-history::-webkit-scrollbar{width:4px}
 .dialogue-history::-webkit-scrollbar-thumb{background:rgba(201,169,110,0.3);border-radius:2px}
 .msg{display:flex;gap:12px;animation:msgIn 0.4s ease;max-width:680px;width:100%;box-sizing:border-box;padding:0 4px}
@@ -137,7 +138,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 .anger-spectrum::before{content:'';position:absolute;top:50%;left:0;right:0;height:3px;background:linear-gradient(90deg,#e07070,#e8a87c,#f0e68c,#82e0aa);transform:translateY(-50%);border-radius:2px}
 .anger-point{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:rgba(13,13,26,0.9);cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-light)}
 .anger-point:hover{transform:scale(1.15);border-color:var(--accent)}
-.anger-point.selected{border-color:var(--accent);background:rgba(201,169,110,0.2);box-shadow:0 0 12px rgba(201,169,110,0.3)}
+.anger-point.selected{border-color:var(--accent);background:rgba(40,36,20,0.95);box-shadow:0 0 12px rgba(201,169,110,0.3);z-index:2}
 .anger-label{color:rgba(240,230,216,0.6);font-size:12px;margin-top:8px}
 
 /* Reflection Input */
@@ -416,15 +417,16 @@ const AudioEngine = {
     f.type = 'highpass';
     f.frequency.value = 800;
     g.gain.setValueAtTime(0.03, this.ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
     o.connect(f); f.connect(g); g.connect(this.sfxGain);
-    o.start(); o.stop(this.ctx.currentTime + 0.04);
+    o.start(); o.stop(this.ctx.currentTime + 0.07);
   }
 };
 
 // ========== GAME STATE ==========
 const GameState = {
   temperature: 1.5,
+  initialScore: 1.5,
   chapter: 0,
   stepIndex: 0,
   egoStates: { child: true, parent: false, adult: false },
@@ -437,7 +439,10 @@ const GameState = {
 
 const AVATARS = {
   toad: 'assets/toad_portrait.png',
-  heron: 'assets/heron_portrait.png'
+  heron: 'assets/heron_portrait.png',
+  rat: 'assets/rat_portrait.png',
+  mole: 'assets/mole_portrait.png',
+  badger: 'assets/badger_portrait.png'
 };
 
 const SCENES = {
@@ -497,6 +502,14 @@ function updateEgoBadges() {
 function scrollToBottom() {
   const hist = $('.dialogue-history');
   if (hist) setTimeout(() => hist.scrollTop = hist.scrollHeight, 50);
+}
+
+// Auto-scroll when input-area resizes (choices/widgets/continue appearing)
+let _inputObserverSet = false;
+function ensureInputObserver() {
+  if (_inputObserverSet) return;
+  const ia = document.querySelector('.input-area');
+  if (ia) { new ResizeObserver(() => scrollToBottom()).observe(ia); _inputObserverSet = true; }
 }
 
 // ========== DIALOGUE ENGINE ==========
@@ -559,7 +572,7 @@ const DialogueEngine = {
       // Slower pace: 45ms per char, slight pause on punctuation
       const ch = text[i];
       const isPunct = '，。！？；：、......'.includes(ch);
-      await new Promise(r => setTimeout(r, isPunct ? 240 : 90));
+      await new Promise(r => setTimeout(r, isPunct ? 400 : 150));
     }
   },
 
@@ -591,7 +604,7 @@ const DialogueEngine = {
     const area = $('.input-area');
     if (!area) return;
     area.innerHTML = `<button class="continue-btn" id="cont-btn">继 续</button>`;
-    $('#cont-btn').onclick = () => { AudioEngine.playClick(); callback(); };
+    $('#cont-btn').onclick = () => { AudioEngine.playClick(); area.innerHTML = ''; callback(); };
   },
 
   showWidget(html, onReady) {
@@ -711,7 +724,7 @@ function showEnding() {
   es.querySelector('.ending-content').innerHTML = `
     <h1>新 生</h1>
     <div class="ending-score">${tempDisplay} / 10</div>
-    <p>蛤蟆先生完成了他的心灵之旅。<br>从最初的 1.5 分，到现在的 ${tempDisplay} 分。</p>
+    <p>蛤蟆先生完成了他的心灵之旅。<br>从最初的 ${GameState.initialScore} 分，到现在的 ${tempDisplay} 分。</p>
     <p>他选择了「我好，你也好」的人生坐标，<br>不再是别人期望中的那个蛤蟆，<br>而是真正的、自由的自己。</p>
     <div class="ending-fates">
       <h3>每个人都找到了新的方向</h3>
@@ -762,7 +775,7 @@ function generateInsightsImage() {
       totalH += qlines.length * 22 + 20;
       ctx.font = bodyFont;
     }
-    totalH += 30; // card bottom margin
+    totalH += 42; // card bottom margin + gap
   });
   totalH += 80; // footer
 
@@ -806,7 +819,7 @@ function generateInsightsImage() {
     if (ins.quote) {
       ctx.font = quoteFont;
       const qlines = wrapText(ctx, '"' + ins.quote + '"', cardW - cardPadding * 2 - 16);
-      cardH += qlines.length * 22 + 16;
+      cardH += qlines.length * 22 + 20;
     }
 
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
@@ -835,23 +848,26 @@ function generateInsightsImage() {
 
     // Quote
     if (ins.quote) {
-      cy += 8;
-      ctx.strokeStyle = 'rgba(201,169,110,0.4)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cardX + cardPadding, cy - 4);
-      ctx.lineTo(cardX + cardPadding, cy + 40);
-      ctx.stroke();
+      cy += 12;
       ctx.fillStyle = 'rgba(201,169,110,0.7)';
       ctx.font = quoteFont;
       const qlines = wrapText(ctx, '"' + ins.quote + '"', cardW - cardPadding * 2 - 16);
+      // fillText uses baseline; text top is ~12px above cy. Bar should span from text top to last line bottom.
+      const barTop = cy - 12;
+      const barBottom = cy + (qlines.length - 1) * 22 + 6;
+      ctx.strokeStyle = 'rgba(201,169,110,0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cardX + cardPadding, barTop);
+      ctx.lineTo(cardX + cardPadding, barBottom);
+      ctx.stroke();
       qlines.forEach(line => {
         ctx.fillText(line, cardX + cardPadding + 14, cy);
         cy += 22;
       });
     }
 
-    y += cardH + 16;
+    y += cardH + 28;
   });
 
   // Footer
@@ -931,6 +947,7 @@ async function initGame() {
       <div class="input-area"></div>
     </div>`;
   $('#ending-screen').innerHTML = '<div class="ending-content"></div>';
+  ensureInputObserver();
   updateThermometer();
   updateEgoBadges();
   buildChapters();
@@ -1098,20 +1115,20 @@ CHAPTERS = [
         });
         $('#thermo-confirm').onclick = async () => {
           AudioEngine.playReveal();
-          // Always start low to match the book
-          GameState.temperature = Math.min(selected, 3);
+          GameState.temperature = selected;
+          GameState.initialScore = selected;
           updateThermometer();
           DialogueEngine.clearInput();
           DialogueEngine.addMessage('toad', `我觉得......大概${selected}分吧。`, 'self');
           await new Promise(r => setTimeout(r, 400));
           if (selected <= 3) {
             await DialogueEngine.typeMessage('heron', '谢谢你的坦诚。这个分数说明你正在经历很深的痛苦。但你愿意来到这里，本身就已经是一种勇气。');
+          } else if (selected <= 5) {
+            await DialogueEngine.typeMessage('heron', '谢谢你。这个分数说明你还在承受着不少痛苦，虽然你可能不愿意承认。');
           } else {
             await DialogueEngine.typeMessage('heron', '你说的是你真实的感受吗？还是你习惯性地想让别人觉得你「还好」？');
             await new Promise(r => setTimeout(r, 300));
-            await DialogueEngine.typeMessage('heron', '很多人在最痛苦的时候，反而会给自己打一个偏高的分数。因为承认自己的脆弱，是一件很难的事。');
-            GameState.temperature = 1.5;
-            updateThermometer();
+            await DialogueEngine.typeMessage('heron', '很多人在最痛苦的时候，反而会给自己打一个偏高的分数。因为承认自己的脆弱，是一件很难的事。不过无论如何，我尊重你的评价。');
           }
           await showInsight('情绪温度计', '学会给自己的情绪打分，是自我觉察的第一步。很多时候，我们甚至不知道自己有多痛苦，因为我们已经习惯了压抑和忽略自己的感受。承认「我现在很不好」，需要巨大的勇气。', '理解你的感受，而不是否认它们 -- 无论是通过忽视还是压抑。');
           nextStep();
@@ -1604,9 +1621,9 @@ CHAPTERS = [
           DialogueEngine.clearInput();
           GameState.temperature = Math.max(sel, 8.5);
           updateThermometer();
-          DialogueEngine.addMessage('toad', `我觉得是${sel}分。比起最初的1.5分，简直是另一个世界。`, 'self');
+          DialogueEngine.addMessage('toad', `我觉得是${sel}分。比起最初的${GameState.initialScore}分，变化很大。`, 'self');
           await new Promise(r => setTimeout(r, 500));
-          await DialogueEngine.typeMessage('heron', '从1.5到现在......你走过了一段很长的路。');
+          await DialogueEngine.typeMessage('heron', `从${GameState.initialScore}到现在......你走过了一段很长的路。`);
           nextStep();
         };
       });
@@ -1671,6 +1688,6 @@ CHAPTERS = [
 ]; // end CHAPTERS
 } // end buildChapters
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v67327c56f0bb4ef8b305cae61679db8f1769101564043" integrity="sha512-rdcWY47ByXd76cbCFzznIcEaCN71jqkWBBqlwhF1SY7KubdLKZiEGeP7AyieKZlGP9hbY/MhGrwXzJC/HulNyg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
