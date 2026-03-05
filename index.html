@@ -724,7 +724,7 @@ function showEnding() {
   es.querySelector('.ending-content').innerHTML = `
     <h1>新 生</h1>
     <div class="ending-score">${tempDisplay} / 10</div>
-    <p>蛤蟆先生完成了他的心灵之旅。<br>从最初的 ${GameState.initialScore} 分，到现在的 ${tempDisplay} 分。</p>
+    <p>蛤蟆先生完成了他的心灵之旅。</p>
     <p>他选择了「我好，你也好」的人生坐标，<br>不再是别人期望中的那个蛤蟆，<br>而是真正的、自由的自己。</p>
     <div class="ending-fates">
       <h3>每个人都找到了新的方向</h3>
@@ -1511,7 +1511,20 @@ CHAPTERS = [
           AudioEngine.playReveal();
           DialogueEngine.clearInput();
           GameState.choicesMade.lifePosition = sel;
-          await DialogueEngine.typeMessage('heron', '蛤蟆先生大部分时间都生活在「我不好，你好」的位置 -- 这让他不断讨好别人，否定自己。而老獾则经常处于「我好，你不好」-- 用批评和控制来维护自己的权威。');
+          const posLabels = { 'notok-ok': '我不好，你好', 'ok-ok': '我好，你也好', 'notok-notok': '我不好，你也不好', 'ok-notok': '我好，你不好' };
+          DialogueEngine.addMessage('toad', `我觉得自己目前处于「${posLabels[sel]}」的位置。`, 'self');
+          await new Promise(r => setTimeout(r, 400));
+          if (sel === 'notok-ok') {
+            await DialogueEngine.typeMessage('heron', '「我不好，你好」-- 这正是蛤蟆先生大半生的人生坐标。当一个人总觉得自己不够好，他就会不断讨好别人，否定自己。你的痛苦很大一部分来自这里。');
+          } else if (sel === 'ok-notok') {
+            await DialogueEngine.typeMessage('heron', '「我好，你不好」-- 这个位置看似强大，实则暗藏脆弱。像老獾一样，用批评和控制来维护权威，其实是害怕暴露自己的不安。你有没有想过，当你指责别人的时候，是不是在逃避面对自己？');
+          } else if (sel === 'notok-notok') {
+            await DialogueEngine.typeMessage('heron', '「我不好，你也不好」-- 这是最让人绝望的位置。一个人如果觉得自己不好、别人也不好，就会对整个世界失去希望。但你来到了这里，这本身就说明你内心还有一丝光在闪动。');
+          } else {
+            await DialogueEngine.typeMessage('heron', '你选择了「我好，你也好」。这是最健康的人生坐标。但我想请你诚实地问自己：这是你真正相信的，还是你觉得「应该」选的？很多人在理智上知道正确答案，但在情感上活在另一个象限里。');
+          }
+          await new Promise(r => setTimeout(r, 400));
+          await DialogueEngine.typeMessage('heron', '书里的蛤蟆先生大部分时间生活在「我不好，你好」的位置，而老獾经常处于「我好，你不好」。他们之间的互动，就像一场角色已经固定的戏剧。');
           await new Promise(r => setTimeout(r, 400));
           await DialogueEngine.typeMessage('heron', '我们的目标，是走向「我好，你也好」。但这不是一次性的决定，而是一个终身的承诺。你不能像登上珠穆朗玛峰那样说「好，我到了」。它是一个动态的、需要不断选择的过程。');
           GameState.temperature = 7;
