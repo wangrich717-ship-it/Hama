@@ -38,15 +38,15 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 
 /* GAME SCREEN LAYOUT */
 #game-screen{flex-direction:column;background:var(--bg-dark)}
-.game-header{height:auto;min-height:56px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:space-between;padding:8px 20px;border-bottom:1px solid rgba(201,169,110,0.15);flex-shrink:0;flex-wrap:wrap;gap:4px 12px}
-.header-left{display:flex;align-items:center;gap:16px}
+.game-header{height:auto;min-height:44px;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:space-between;padding:8px 20px;border-bottom:1px solid rgba(201,169,110,0.15);flex-shrink:0;gap:10px;flex-wrap:nowrap}
+.header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;overflow:hidden}
 .chapter-label{color:var(--accent);font-size:13px;letter-spacing:2px}
 .thermometer-bar{display:flex;align-items:center;gap:8px}
 .thermo-label{color:rgba(240,230,216,0.6);font-size:12px}
 .thermo-track{width:120px;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
 .thermo-fill{height:100%;border-radius:4px;transition:width 1s ease,background 1s ease;width:15%}
 .thermo-val{color:var(--accent);font-size:13px;font-weight:600;min-width:32px}
-.header-right{display:flex;align-items:center;gap:12px}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .ego-badges{display:flex;gap:6px}
 .ego-badge{padding:3px 10px;border-radius:12px;font-size:11px;letter-spacing:1px;opacity:0.4;transition:all 0.4s;border:1px solid transparent}
 .ego-badge.active{opacity:1}
@@ -191,14 +191,15 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 
 /* RESPONSIVE */
 @media(max-width:600px){
-  .game-header{padding:6px 12px;gap:4px 8px}
-  .header-left{gap:8px;flex-wrap:wrap}
-  .chapter-label{font-size:12px;letter-spacing:1px}
-  .thermo-label{font-size:11px}
-  .thermo-track{width:60px}
-  .thermo-val{font-size:12px;min-width:28px}
+  .game-header{padding:6px 10px;gap:6px}
+  .header-left{gap:6px;flex-wrap:nowrap}
+  .chapter-label{font-size:12px;letter-spacing:1px;white-space:nowrap}
+  .thermo-label{display:none}
+  .thermo-track{width:40px}
+  .thermo-val{font-size:11px;min-width:24px}
   .ego-badge{padding:2px 7px;font-size:10px}
   .ego-badges{gap:4px}
+  .ego-badge.locked{display:none}
   .title-content h1{letter-spacing:3px}
   .title-content .subtitle{letter-spacing:2px;padding:8px 18px;font-size:clamp(12px,2.2vw,16px)}
   .dialogue-history{padding:12px}
