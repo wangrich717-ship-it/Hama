@@ -224,6 +224,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 .insight-review-card .review-quote{font-style:italic;color:rgba(201,169,110,0.75);font-size:11px;border-left:2px solid rgba(201,169,110,0.4);padding-left:10px;margin-top:8px;line-height:1.6}
 .download-insights-btn{background:rgba(201,169,110,0.12);border:1px solid var(--accent);color:var(--accent);padding:10px 28px;border-radius:6px;cursor:pointer;font-family:'Noto Serif SC',serif;font-size:13px;letter-spacing:2px;transition:all 0.3s;display:block;margin:12px auto 0}
 .download-insights-btn:hover{background:var(--accent);color:var(--bg-dark)}
+/* Chapter Menu */
+#chapter-menu{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;display:flex;justify-content:center;align-items:center}
+.chapter-menu-inner{background:#1a1208;border:1px solid rgba(201,169,110,0.4);border-radius:12px;padding:20px 16px;width:85%;max-width:300px;max-height:80vh;display:flex;flex-direction:column}
+.chapter-menu-inner h3{color:var(--accent);text-align:center;margin:0 0 14px;font-size:15px;letter-spacing:2px}
+.chapter-menu-list{overflow-y:auto;flex:1}
+.chapter-menu-btn{display:block;width:100%;padding:9px 12px;margin-bottom:7px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.2);border-radius:8px;color:var(--text-light);text-align:left;cursor:pointer;font-size:13px;line-height:1.4;font-family:'Noto Serif SC',serif;transition:background 0.2s}
+.chapter-menu-btn:hover{background:rgba(201,169,110,0.22);border-color:rgba(201,169,110,0.5)}
+.chapter-menu-btn .ch-num{color:var(--accent);font-size:11px;display:block;margin-bottom:2px}
+.chapter-menu-close{display:block;width:100%;padding:8px;background:transparent;border:1px solid rgba(201,169,110,0.25);border-radius:8px;color:rgba(201,169,110,0.5);cursor:pointer;margin-top:10px;font-family:'Noto Serif SC',serif;font-size:12px;letter-spacing:1px}
+.chapter-menu-close:hover{border-color:rgba(201,169,110,0.5);color:var(--accent)}
+.chapters-btn{background:transparent;border:1px solid rgba(201,169,110,0.35);border-radius:6px;color:rgba(201,169,110,0.75);font-size:11px;padding:3px 7px;cursor:pointer;font-family:'Noto Serif SC',serif;letter-spacing:1px;transition:all 0.2s}
+.chapters-btn:hover{border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -543,9 +555,10 @@ const DialogueEngine = {
   },
 
   async typeMessage(speaker, text, type = 'npc') {
+    const session = _runSession;
     await waitWhilePaused();
     const hist = $('.dialogue-history');
-    if (!hist) return;
+    if (!hist || _runSession !== session) return;
     const msg = document.createElement('div');
     msg.className = `msg ${type}`;
     const bubble = document.createElement('div');
@@ -572,6 +585,7 @@ const DialogueEngine = {
     scrollToBottom();
     // Typewriter effect - character by character
     for (let i = 0; i < text.length; i++) {
+      if (_runSession !== session) return;
       await waitWhilePaused();
       bubble.textContent += text[i];
       // Play typing sound for each character (except spaces)
@@ -580,7 +594,8 @@ const DialogueEngine = {
       // Slower pace: 45ms per char, slight pause on punctuation
       const ch = text[i];
       const isPunct = '，。！？；：、......'.includes(ch);
-      await new Promise(r => setTimeout(r, isPunct ? 400 : 150)); await waitWhilePaused();
+      await new Promise(r => setTimeout(r, isPunct ? 400 : 150));
+      if (_runSession !== session) return;
     }
   },
 
@@ -636,6 +651,7 @@ const DialogueEngine = {
 // ========== INSIGHT SYSTEM ==========
 const InsightStore = [];
 let _gamePaused = false;
+let _runSession = 0;
 function waitWhilePaused() {
   if (!_gamePaused) return Promise.resolve();
   return new Promise(resolve => {
@@ -649,7 +665,9 @@ function pauseDelay(ms) {
 }
 
 async function showInsight(title, text, quote) {
+  const session = _runSession;
   await waitWhilePaused();
+  if (_runSession !== session) return;
   AudioEngine.playInsight();
   // Store for later review
   InsightStore.push({ title, text, quote });
@@ -666,7 +684,15 @@ async function showInsight(title, text, quote) {
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add('show'));
   return new Promise(resolve => {
+    const sessionCheck = setInterval(() => {
+      if (_runSession !== session) {
+        clearInterval(sessionCheck);
+        overlay.remove();
+        resolve();
+      }
+    }, 200);
     overlay.querySelector('.insight-close').onclick = () => {
+      clearInterval(sessionCheck);
       overlay.classList.remove('show');
       setTimeout(() => { overlay.remove(); resolve(); }, 500);
     };
@@ -716,6 +742,79 @@ async function runStep() {
 function nextStep() {
   GameState.stepIndex++;
   runStep();
+}
+
+// ========== CHAPTER JUMP SYSTEM ==========
+const CHAPTER_PRESETS = [
+  { ch:0, step:0, label:'第一章', title:'整个人都不太好',   temp:1.5, initScore:1.5, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:0, step:3, label:'第二章', title:'初见咨询师',       temp:1.5, initScore:1.5, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:1, step:0, label:'第三章', title:'情绪温度计',       temp:1.5, initScore:1.5, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:2, step:0, label:'第四章', title:'探索童年',         temp:3.0, initScore:3.0, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:3, step:0, label:'第五章', title:'愤怒的表达',       temp:3.5, initScore:3.0, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:4, step:0, label:'第六章', title:'意外来访',         temp:4.0, initScore:3.0, ego:{child:true,parent:false,adult:false}, stamps:0 },
+  { ch:4, step:1, label:'第七章', title:'秘密协议',         temp:4.5, initScore:3.0, ego:{child:true,parent:true, adult:false}, stamps:1 },
+  { ch:5, step:0, label:'第八章', title:'蛤蟆先生的选择',   temp:5.0, initScore:3.0, ego:{child:true,parent:true, adult:false}, stamps:1 },
+  { ch:6, step:0, label:'第九章', title:'人生坐标',         temp:6.0, initScore:3.0, ego:{child:true,parent:true, adult:true }, stamps:0 },
+  { ch:7, step:0, label:'第十章', title:'心理游戏',         temp:7.0, initScore:3.0, ego:{child:true,parent:true, adult:true }, stamps:2 },
+  { ch:8, step:0, label:'第十一章',title:'最后一次面谈',    temp:7.5, initScore:3.0, ego:{child:true,parent:true, adult:true }, stamps:2 },
+  { ch:8, step:2, label:'终章',   title:'道别与新生',       temp:9.0, initScore:3.0, ego:{child:true,parent:true, adult:true }, stamps:0 },
+];
+
+function jumpToChapter(presetIdx) {
+  const p = CHAPTER_PRESETS[presetIdx];
+  // Invalidate current async chain
+  _runSession++;
+  // Close any open insight overlays immediately
+  document.querySelectorAll('.insight-overlay').forEach(el => el.remove());
+  // Close chapter menu
+  const menu = document.getElementById('chapter-menu');
+  if (menu) menu.remove();
+  // Apply state preset
+  GameState.chapter = p.ch;
+  GameState.stepIndex = p.step;
+  GameState.temperature = p.temp;
+  GameState.initialScore = p.initScore;
+  GameState.egoStates = { ...p.ego };
+  GameState.stamps = p.stamps;
+  GameState.choicesMade = {};
+  GameState.currentBg = '';
+  GameState.currentMood = 'sad';
+  InsightStore.length = 0;
+  // Resume if paused
+  _gamePaused = false;
+  // Reset UI
+  DialogueEngine.clearHistory();
+  DialogueEngine.clearInput();
+  updateThermometer();
+  updateEgoBadges();
+  // Update chapter label
+  $('#ch-label').textContent = p.label;
+  // Start the chapter
+  runStep();
+}
+
+function showChapterMenu() {
+  const existing = document.getElementById('chapter-menu');
+  if (existing) { existing.remove(); return; }
+  const menu = document.createElement('div');
+  menu.id = 'chapter-menu';
+  menu.innerHTML = `
+    <div class="chapter-menu-inner">
+      <h3>选择章节</h3>
+      <div class="chapter-menu-list">
+        ${CHAPTER_PRESETS.map((p, i) => `
+          <button class="chapter-menu-btn" data-idx="${i}">
+            <span class="ch-num">${p.label}</span>${p.title}
+          </button>`).join('')}
+      </div>
+      <button class="chapter-menu-close">取消</button>
+    </div>`;
+  document.body.appendChild(menu);
+  menu.querySelectorAll('.chapter-menu-btn').forEach(btn => {
+    btn.onclick = () => jumpToChapter(parseInt(btn.dataset.idx));
+  });
+  menu.querySelector('.chapter-menu-close').onclick = () => menu.remove();
+  menu.onclick = (e) => { if (e.target === menu) menu.remove(); };
 }
 
 // Utility: wait for continue click
@@ -959,6 +1058,7 @@ async function initGame() {
           <span class="ego-badge parent locked" data-type="parent">父母</span>
           <span class="ego-badge adult locked" data-type="adult">成人</span>
         </div>
+        <button class="chapters-btn" id="chapters-btn" title="章节列表">章节</button>
         <button class="pause-btn" id="pause-btn" title="暂停">&#9646;&#9646;</button>
       </div>
     </div>
@@ -972,6 +1072,7 @@ async function initGame() {
   $('#ending-screen').innerHTML = '<div class="ending-content"></div>';
   ensureInputObserver();
   // Pause button logic
+  $('#chapters-btn').onclick = () => showChapterMenu();
   const pauseBtn = $('#pause-btn');
   pauseBtn.onclick = () => {
     _gamePaused = !_gamePaused;
@@ -1292,7 +1393,7 @@ CHAPTERS = [
           if (adapted.length >= natural.length && adapted.length > 0) {
             await DialogueEngine.typeMessage('heron', '我注意到，你选择的很多情绪都属于「适应型儿童」的范畴 -- 内疚、讨好、退缩、依赖。这些不是你天生的情绪，而是你在成长过程中，为了应对严厉的环境而学会的。');
           } else {
-            await DialogueEngine.typeMessage('heron', '你对自己的基本情绪有一定的觉察。但我想邀请你思考：在这些情绪之下，是否还隐藏着一些你不敢面对的感受？');
+            await DialogueEngine.typeMessage('heron', '你和自己的感受之间，有一条比较直接的通道——这不是每个人都有的。不过，即便如此，我们每个人心里还是同时运行着另一套声音。那是在成长过程中慢慢形成的「自动模式」，有时候和真实的自己很难分清楚。');
           }
           GameState.stamps += 1;
           await showInsight('自然型儿童 vs 适应型儿童', '快乐、愤怒、悲伤、恐惧 -- 这是每个人与生俱来的「自然型儿童」情绪，就像红黄蓝三原色。\n\n而内疚、讨好、退缩、依赖 -- 这些是「适应型儿童」的行为，是我们在童年时为了应对强大的父母而发展出来的生存策略。\n\n了解这个区别，是认识自己的第一步。', '理解你的童年就是理解你自己。');
