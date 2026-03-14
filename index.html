@@ -1219,9 +1219,9 @@ CHAPTERS = [
           } else if (selected <= 5) {
             await DialogueEngine.typeMessage('heron', '谢谢你。不过根据我的观察，你的实际状态可能比你自己意识到的要更低一些。很多时候，我们已经习惯了痛苦，反而感受不到它的重量了。');
           } else {
-            await DialogueEngine.typeMessage('heron', '你说的是你真实的感受吗？还是你习惯性地想让别人觉得你「还好」？');
+            await DialogueEngine.typeMessage('heron', '谢谢你告诉我。你说出这个分数的时候，有什么感觉？');
             await new Promise(r => setTimeout(r, 300));
-            await DialogueEngine.typeMessage('heron', '蛤蟆先生，根据你朋友们的描述，以及我现在看到的你 -- 你的状态远比你自己以为的要严重。很多人在最痛苦的时候，反而给自己打一个偏高的分数。因为承认脆弱，需要巨大的勇气。');
+            await DialogueEngine.typeMessage('heron', '蛤蟆先生，你的感受由你来定义——我不会去更正你的答案。我只是注意到，你还是坐在了这里。有时候，不是痛苦逼着我们来，而是某种说不清的东西在推着我们。那个说不清的东西，我想和你一起看看。');
           }
           await showInsight('情绪温度计', '学会给自己的情绪打分，是自我觉察的第一步。很多时候，我们甚至不知道自己有多痛苦，因为我们已经习惯了压抑和忽略自己的感受。承认「我现在很不好」，需要巨大的勇气。', '理解你的感受，而不是否认它们 -- 无论是通过忽视还是压抑。');
           nextStep();
