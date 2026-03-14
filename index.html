@@ -559,7 +559,7 @@ const DialogueEngine = {
     const session = _runSession;
     await waitWhilePaused();
     const hist = $('.dialogue-history');
-    if (!hist || _runSession !== session) return;
+    if (!hist || _runSession !== session) throw _SESSION_CANCELLED;
     const msg = document.createElement('div');
     msg.className = `msg ${type}`;
     const bubble = document.createElement('div');
@@ -586,7 +586,7 @@ const DialogueEngine = {
     scrollToBottom();
     // Typewriter effect - character by character
     for (let i = 0; i < text.length; i++) {
-      if (_runSession !== session) return;
+      if (_runSession !== session) throw _SESSION_CANCELLED;
       await waitWhilePaused();
       bubble.textContent += text[i];
       // Play typing sound for each character (except spaces)
@@ -596,7 +596,7 @@ const DialogueEngine = {
       const ch = text[i];
       const isPunct = '，。！？；：、......'.includes(ch);
       await new Promise(r => setTimeout(r, isPunct ? 400 : 150));
-      if (_runSession !== session) return;
+      if (_runSession !== session) throw _SESSION_CANCELLED;
     }
   },
 
@@ -653,6 +653,7 @@ const DialogueEngine = {
 const InsightStore = [];
 let _gamePaused = false;
 let _runSession = 0;
+const _SESSION_CANCELLED = Symbol('session_cancelled');
 function waitWhilePaused() {
   if (!_gamePaused) return Promise.resolve();
   return new Promise(resolve => {
@@ -668,7 +669,7 @@ function pauseDelay(ms) {
 async function showInsight(title, text, quote) {
   const session = _runSession;
   await waitWhilePaused();
-  if (_runSession !== session) return;
+  if (_runSession !== session) throw _SESSION_CANCELLED;
   AudioEngine.playInsight();
   // Store for later review
   InsightStore.push({ title, text, quote });
@@ -684,7 +685,7 @@ async function showInsight(title, text, quote) {
     </div>`;
   document.body.appendChild(overlay);
   requestAnimationFrame(() => overlay.classList.add('show'));
-  return new Promise(resolve => {
+  await new Promise(resolve => {
     const sessionCheck = setInterval(() => {
       if (_runSession !== session) {
         clearInterval(sessionCheck);
@@ -698,10 +699,12 @@ async function showInsight(title, text, quote) {
       setTimeout(() => { overlay.remove(); resolve(); }, 500);
     };
   });
+  if (_runSession !== session) throw _SESSION_CANCELLED;
 }
 
 // ========== CHAPTER TRANSITION ==========
 async function showChapterTransition(num, title) {
+  const session = _runSession;
   await waitWhilePaused();
   AudioEngine.playTransition();
   const el = document.createElement('div');
@@ -714,12 +717,17 @@ async function showChapterTransition(num, title) {
   }
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
-  return new Promise(resolve => {
+  await new Promise(resolve => {
+    const check = setInterval(() => {
+      if (_runSession !== session) { clearInterval(check); el.remove(); resolve(); }
+    }, 100);
     setTimeout(() => {
+      clearInterval(check);
       el.classList.remove('show');
       setTimeout(() => { el.remove(); resolve(); }, 800);
     }, 2200);
   });
+  if (_runSession !== session) throw _SESSION_CANCELLED;
 }
 
 // ========== CHAPTERS DATA PLACEHOLDER ==========
@@ -736,8 +744,12 @@ async function runStep() {
     runStep();
     return;
   }
-  await step();
-  // stepIndex is advanced inside each step via nextStep()
+  try {
+    await step();
+  } catch(e) {
+    if (e !== _SESSION_CANCELLED) throw e;
+    // Session was cancelled — old chain exits cleanly
+  }
 }
 
 function nextStep() {
@@ -783,6 +795,10 @@ function jumpToChapter(presetIdx) {
   InsightStore.length = 0;
   // Resume if paused
   _gamePaused = false;
+  // Stop current BGM immediately
+  if (AudioEngine.bgmNode) { try { AudioEngine.bgmNode.stop(); } catch(e){} AudioEngine.bgmNode = null; }
+  // Remove any lingering overlays
+  document.querySelectorAll('.chapter-transition, .insight-overlay').forEach(el => el.remove());
   // Reset UI
   DialogueEngine.clearHistory();
   DialogueEngine.clearInput();
