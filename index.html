@@ -228,7 +228,8 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Serif SC',ser
 #chapter-menu{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;display:flex;justify-content:center;align-items:center}
 .chapter-menu-inner{background:#1a1208;border:1px solid rgba(201,169,110,0.4);border-radius:12px;padding:20px 16px;width:85%;max-width:300px;max-height:80vh;display:flex;flex-direction:column}
 .chapter-menu-inner h3{color:var(--accent);text-align:center;margin:0 0 14px;font-size:15px;letter-spacing:2px}
-.chapter-menu-list{overflow-y:auto;flex:1}
+.chapter-menu-list{overflow-y:auto;flex:1;scrollbar-width:none;-ms-overflow-style:none}
+.chapter-menu-list::-webkit-scrollbar{display:none}
 .chapter-menu-btn{display:block;width:100%;padding:9px 12px;margin-bottom:7px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.2);border-radius:8px;color:var(--text-light);text-align:left;cursor:pointer;font-size:13px;line-height:1.4;font-family:'Noto Serif SC',serif;transition:background 0.2s}
 .chapter-menu-btn:hover{background:rgba(201,169,110,0.22);border-color:rgba(201,169,110,0.5)}
 .chapter-menu-btn .ch-num{color:var(--accent);font-size:11px;display:block;margin-bottom:2px}
@@ -1045,7 +1046,7 @@ async function initGame() {
   $('#game-screen').innerHTML = `
     <div class="game-header">
       <div class="header-left">
-        <span class="chapter-label" id="ch-label">序章</span>
+        <span class="chapter-label" id="ch-label" style="cursor:pointer" title="切换章节">序章</span>
         <div class="thermometer-bar">
           <span class="thermo-label">情绪温度</span>
           <div class="thermo-track"><div class="thermo-fill"></div></div>
@@ -1058,7 +1059,6 @@ async function initGame() {
           <span class="ego-badge parent locked" data-type="parent">父母</span>
           <span class="ego-badge adult locked" data-type="adult">成人</span>
         </div>
-        <button class="chapters-btn" id="chapters-btn" title="章节列表">章节</button>
         <button class="pause-btn" id="pause-btn" title="暂停">&#9646;&#9646;</button>
       </div>
     </div>
@@ -1072,7 +1072,7 @@ async function initGame() {
   $('#ending-screen').innerHTML = '<div class="ending-content"></div>';
   ensureInputObserver();
   // Pause button logic
-  $('#chapters-btn').onclick = () => showChapterMenu();
+  $('#ch-label').onclick = () => showChapterMenu();
   const pauseBtn = $('#pause-btn');
   pauseBtn.onclick = () => {
     _gamePaused = !_gamePaused;
